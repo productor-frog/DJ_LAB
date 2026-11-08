@@ -43,4 +43,6 @@
 - Se integró `origin/opencode-checkpoints/5` (`88de66e`) sin conflictos mediante merge; el diff efectivo incorporó únicamente metadatos de checkpoint/conversación.
 - La app pasó `node --check app.js`, `git diff --check`, respuesta HTTP 200 y Playwright sin errores de consola (una advertencia externa).
 - Se preserva el protocolo vigente de `AGENTS.md`; no se reemplazan sus reglas por instrucciones que ordenen eliminar ramas no inspeccionadas o resolver conflictos automáticamente.
-- Próximo: publicar el merge verificado por fast-forward, retirar solo el checkpoint ya integrado y conservar ramas de deployment.
+- `562f272` quedó publicado en `origin/main` por fast-forward; se eliminó únicamente `opencode-checkpoints/5` después de confirmar que estaba integrado. No había ramas `opencode-resume/*`; se conservaron las ramas de deployment.
+- No se creó `save-005`: no hubo cambio visible en la app y se conservaron los tags inmutables existentes.
+- Próximo: esperar nueva solicitud y seguir `AGENTS.md` al reanudar.
