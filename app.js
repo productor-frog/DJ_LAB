@@ -4,7 +4,10 @@
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
   const STORAGE_KEY = 'djlab-library-v1';
+  const MIDI_MAP_KEY = 'djlab-midi-map-v1';
   const YOUTUBE_PLAYLIST_ID = 'PLSaUi107fadQ';
+  const MIDI_TARGETS = ['play-a', 'play-b', 'cue-a', 'cue-b', 'sync-a', 'sync-b', 'volume-a', 'volume-b', 'pitch-a', 'pitch-b', 'eq-a-low', 'eq-a-mid', 'eq-a-high', 'eq-b-low', 'eq-b-mid', 'eq-b-high', 'crossfader', 'jog-a', 'jog-b'];
+  const MIDI_LABELS = Object.fromEntries([...$('#midi-target-select')?.options || []].map(option => [option.value, option.textContent]));
   const TARGET_BPM = 120;
   const decks = {};
   const mixPlaylist = [];
@@ -15,18 +18,59 @@
   let crossPosition = 0.5;
   let toastTimer;
   let midiAccess;
+  let midiLearnEnabled = false;
+  let midiLearnTarget = null;
+  let lastJogValue = new Map();
+  const midiMap = loadMidiMap();
   const library = loadSavedLibrary();
+  const midiButtonStates = new Map();
+
+  function normalizeLibraryTrack(item) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return null;
+    if (typeof item.name !== 'string' || !item.name.trim() || item.name.trim().length > 160) return null;
+    const source = item.source;
+    const kind = item.kind;
+    if (!['Demo', 'Local'].includes(source) || !['demo', 'local'].includes(kind)) return null;
+    if ((source === 'Demo') !== (kind === 'demo')) return null;
+    const bpm = item.bpm == null ? null : Number(item.bpm);
+    const duration = item.duration == null ? 0 : Number(item.duration);
+    if ((bpm !== null && (!Number.isFinite(bpm) || bpm < 20 || bpm > 400)) || !Number.isFinite(duration) || duration < 0 || duration > 86400) return null;
+    if (item.artist != null && (typeof item.artist !== 'string' || item.artist.length > 160)) return null;
+    if (item.id != null && (typeof item.id !== 'string' || item.id.length > 100)) return null;
+    return {
+      id: item.id || `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      name: item.name.trim(), artist: item.artist || (kind === 'demo' ? 'DJ Lab' : 'Audio local'),
+      bpm, duration, source, kind
+    };
+  }
 
   function loadSavedLibrary() {
     try {
       const value = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      return Array.isArray(value) ? value.filter(item => item && typeof item.name === 'string').slice(0, 100) : [];
+      return Array.isArray(value) ? value.map(normalizeLibraryTrack).filter(Boolean).slice(0, 100) : [];
     } catch { return []; }
+  }
+
+  function loadMidiMap() {
+    try {
+      const value = JSON.parse(localStorage.getItem(MIDI_MAP_KEY) || '{}');
+      if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+      return Object.fromEntries(Object.entries(value).filter(([target, mapping]) =>
+        MIDI_TARGETS.includes(target) && mapping && ['note', 'cc'].includes(mapping.type) &&
+        Number.isInteger(mapping.channel) && mapping.channel >= 0 && mapping.channel <= 15 &&
+        Number.isInteger(mapping.number) && mapping.number >= 0 && mapping.number <= 127
+      ).map(([target, mapping]) => [target, { type: mapping.type, channel: mapping.channel, number: mapping.number }]));
+    } catch { return {}; }
+  }
+
+  function persistMidiMap() {
+    try { localStorage.setItem(MIDI_MAP_KEY, JSON.stringify(midiMap)); }
+    catch { toast('No se pudo guardar el mapa MIDI.'); }
   }
 
   function persistLibrary() {
     try {
-      const compact = library.map(({ id, name, bpm, duration, source, kind }) => ({ id, name, bpm, duration, source, kind }));
+      const compact = library.map(({ id, name, artist, bpm, duration, source, kind }) => ({ id, name, artist, bpm, duration, source, kind }));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(compact));
     } catch { toast('No se pudo guardar la biblioteca en este navegador.'); }
   }
@@ -61,7 +105,8 @@
       id, audio, source, filters: { low, mid, high }, volume, cross, analyser,
       data: new Uint8Array(analyser.frequencyBinCount), bpm: id === 'a' ? 120 : 124,
       baseBpm: id === 'a' ? 120 : 124, pitch: 0, objectUrl: null, trackName: '', artist: '',
-      demo: false, cuePoint: 0, lastPhase: 0
+      demo: false, cuePoint: 0, lastPhase: 0, beatHistory: [], beatCandidate: null,
+      bandLevels: { low: 0, mid: 0, high: 0 }, estimatedBpm: null, bpmSamples: []
     };
   }
 
@@ -94,9 +139,16 @@
     deck.audio.pause();
     deck.audio.src = url;
     deck.audio.loop = Boolean(details.loop);
+    deck.audio.onloadedmetadata = () => {
+      if (!deck.demo) analyzeOfflineBpm(id);
+    };
     deck.trackName = details.name;
     deck.artist = details.artist || (details.demo ? 'DJ Lab · demo generativa' : 'Archivo local · solo este dispositivo');
     deck.demo = Boolean(details.demo);
+    deck.bpmSamples = [];
+    deck.beatHistory = [];
+    deck.beatCandidate = null;
+    deck.estimatedBpm = deck.demo ? Number(details.bpm) || null : null;
     deck.baseBpm = Number(details.bpm) || (id === 'a' ? 120 : 124);
     deck.cuePoint = 0;
     setPitch(id, deck.pitch);
@@ -104,13 +156,14 @@
     $(`#artist-${id}`).textContent = deck.artist;
     $(`#wave-title-${id}`).textContent = deck.trackName.toUpperCase();
     setStatus('AUDIO PREPARADO');
+    $(`#analysis-status-${id}`).textContent = deck.demo ? `DEMO · ${deck.estimatedBpm.toFixed(1)} BPM` : 'LOCAL · BPM POR ESTIMAR';
     addToLibrary({ ...details, name: deck.trackName, bpm: deck.baseBpm, source: details.demo ? 'Demo' : 'Local' });
     updateTransport(id);
   }
 
   function addToLibrary(track) {
     const existing = library.findIndex(item => item.name === track.name && item.source === track.source);
-    const entry = {
+    const entry = normalizeLibraryTrack({
       id: track.id || `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       name: track.name,
       artist: track.artist || (track.demo ? 'DJ Lab' : 'Audio local'),
@@ -118,8 +171,10 @@
       duration: Number(track.duration) || (track.demo ? 60 / (Number(track.bpm) || 120) * 16 : 0),
       source: track.source || (track.demo ? 'Demo' : 'Local'),
       kind: track.demo ? 'demo' : 'local'
-    };
+    });
+    if (!entry) return;
     if (existing >= 0) library[existing] = entry; else library.unshift(entry);
+    library.splice(100);
     persistLibrary();
     renderLibrary();
   }
@@ -227,6 +282,95 @@
     return `${mins}:${secs}`;
   }
 
+  function analyzeFrequencyBands(id, sampleRate) {
+    const deck = decks[id];
+    const bins = deck.data.length;
+    const maxHz = sampleRate / 2;
+    const ranges = { low: [40, 250], mid: [250, Math.min(4000, maxHz)], high: [Math.min(4000, maxHz - 1), maxHz] };
+    for (const [name, [lo, hi]] of Object.entries(ranges)) {
+      const start = Math.max(0, Math.floor(lo / maxHz * bins));
+      const end = Math.max(start + 1, Math.min(bins, Math.floor(hi / maxHz * bins)));
+      let energy = 0;
+      for (let i = start; i < end; i++) energy += deck.data[i] / 255;
+      deck.bandLevels[name] = energy / (end - start);
+      $(`#band-${name}-${id}`).textContent = `${Math.round(deck.bandLevels[name] * 100)}%`;
+    }
+    if (deck.audio.currentTime > 0.08 && deck.audio.currentTime < (deck.audio.duration || Infinity) - 0.08) {
+      const lowEnergy = deck.bandLevels.low;
+      deck.bpmSamples.push({ time: deck.audio.currentTime, energy: lowEnergy });
+      const cutoff = deck.audio.currentTime - 12;
+      while (deck.bpmSamples.length && deck.bpmSamples[0].time < cutoff) deck.bpmSamples.shift();
+      estimateBpmFromEnergy(id);
+    }
+  }
+
+  async function analyzeOfflineBpm(id) {
+    const deck = decks[id];
+    const url = deck.objectUrl;
+    if (!url || url.startsWith('https://') || !window.AudioContext && !window.webkitAudioContext) return;
+    try {
+      const response = await fetch(url);
+      if (!response.ok) return;
+      const audioBuffer = await response.arrayBuffer();
+      if (deck.objectUrl !== url) return;
+      const OfflineContext = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      if (!OfflineContext) return;
+      const context = new OfflineContext(1, 1, 11025);
+      const decoded = await context.decodeAudioData(audioBuffer);
+      const samples = decoded.getChannelData(0);
+      const sampleRate = decoded.sampleRate;
+      const hop = 256;
+      const energies = [];
+      for (let start = 0; start + 1024 < samples.length; start += hop) {
+        let energy = 0;
+        for (let i = 0; i < 1024; i++) energy += samples[start + i] ** 2;
+        energies.push(Math.sqrt(energy / 1024));
+      }
+      if (deck.objectUrl !== url || energies.length < 20) return;
+      const mean = energies.reduce((sum, value) => sum + value, 0) / energies.length;
+      const peaks = [];
+      for (let i = 1; i < energies.length - 1; i++) {
+        if (energies[i] > mean * 1.45 && energies[i] >= energies[i - 1] && energies[i] > energies[i + 1] && i - (peaks.at(-1)?.index || -Infinity) > Math.floor(sampleRate * 0.22 / hop)) peaks.push({ index: i, time: i * hop / sampleRate });
+      }
+      const intervals = peaks.slice(1).map((peak, i) => peak.time - peaks[i].time).filter(value => value > 0.28 && value < 1.5).sort((a, b) => a - b);
+      if (intervals.length < 3) return;
+      let bpm = 60 / intervals[Math.floor(intervals.length / 2)];
+      if (bpm < 70) bpm *= 2; else if (bpm > 160) bpm /= 2;
+      if (bpm >= 70 && bpm <= 160) {
+        deck.estimatedBpm = bpm;
+        deck.baseBpm = bpm;
+        setPitch(id, deck.pitch);
+        $(`#analysis-status-${id}`).textContent = `LOCAL · ≈${bpm.toFixed(1)} BPM`;
+        const entry = library.find(track => track.name === deck.trackName && track.source === 'Local');
+        if (entry) { entry.bpm = bpm; persistLibrary(); renderLibrary(); }
+      }
+    } catch { $(`#analysis-status-${id}`).textContent = 'LOCAL · BPM NO DISPONIBLE'; }
+  }
+
+  function estimateBpmFromEnergy(id) {
+    const deck = decks[id];
+    const samples = deck.bpmSamples;
+    if (samples.length < 36) return;
+    const mean = samples.reduce((sum, sample) => sum + sample.energy, 0) / samples.length;
+    const variance = samples.reduce((sum, sample) => sum + (sample.energy - mean) ** 2, 0) / samples.length;
+    if (variance < 0.00002) return;
+    const threshold = mean + Math.sqrt(variance) * 0.7;
+    const peaks = [];
+    for (let i = 1; i < samples.length - 1; i++) {
+      if (samples[i].energy > threshold && samples[i].energy >= samples[i - 1].energy && samples[i].energy > samples[i + 1].energy && samples[i].time - (peaks.at(-1)?.time || -Infinity) > 0.22) peaks.push(samples[i]);
+    }
+    if (peaks.length < 5) return;
+    const intervals = peaks.slice(1).map((peak, i) => peak.time - peaks[i].time).filter(interval => interval > 0.28 && interval < 1.5).sort((a, b) => a - b);
+    if (intervals.length < 4) return;
+    const interval = intervals[Math.floor(intervals.length / 2)];
+    const bpm = 60 / interval;
+    const normalized = bpm < 70 ? bpm * 2 : bpm > 160 ? bpm / 2 : bpm;
+    if (normalized >= 70 && normalized <= 160) {
+      deck.estimatedBpm = normalized;
+      $(`#analysis-status-${id}`).textContent = `LOCAL · ≈${normalized.toFixed(1)} BPM`;
+    }
+  }
+
   function renderWave(id) {
     const deck = decks[id];
     const canvas = $(`#wave-${id}`);
@@ -247,8 +391,11 @@
     const sampleRate = audioContext?.sampleRate || 44100;
     const bins = deck.data.length;
     const maxHz = sampleRate / 2;
-    const active = Boolean(deck.analyser && !deck.audio.paused && deck.audio.src);
-    if (active) deck.analyser.getByteFrequencyData(deck.data);
+    const active = Boolean(deck.analyser && !deck.audio.paused && deck.audio.src && !deck.audio.src.startsWith('https://www.youtube'));
+    if (active) {
+      deck.analyser.getByteFrequencyData(deck.data);
+      analyzeFrequencyBands(id, sampleRate);
+    }
     const columns = Math.max(1, Math.floor(width / 3));
     const offset = deck.audio.currentTime ? Math.floor(deck.audio.currentTime * 14) % columns : 0;
     for (let x = 0; x < columns; x++) {
@@ -301,6 +448,13 @@
     $('#phase-readout').textContent = a.audio.src && b.audio.src ? `FASE ${Math.round(delta)} MS` : 'FASE —';
   }
 
+  function measurePhaseDifference(a, b) {
+    const phaseA = ((a.audio.currentTime * a.bpm / 60) % 1 + 1) % 1;
+    const phaseB = ((b.audio.currentTime * b.bpm / 60) % 1 + 1) % 1;
+    const beatFraction = Math.min(Math.abs(phaseA - phaseB), 1 - Math.abs(phaseA - phaseB));
+    return beatFraction * 60000 / Math.max(1, (a.bpm + b.bpm) / 2);
+  }
+
   function checkMix() {
     ensureAudio();
     const a = decks.a, b = decks.b;
@@ -309,27 +463,20 @@
       card.className = 'score-card bad'; $('#score-title').textContent = 'FALTAN PISTAS';
       $('#score-message').textContent = 'Carga o inicia las demos en ambos decks.'; $('#score-value').textContent = '—'; return;
     }
-    const bpmDifference = Math.abs(b.bpm - TARGET_BPM);
-    if (!a.audio.paused && !b.audio.paused) {
-      const phaseA = ((a.audio.currentTime * a.bpm / 60) % 1 + 1) % 1;
-      const phaseB = ((b.audio.currentTime * b.bpm / 60) % 1 + 1) % 1;
-      let diff = Math.abs(phaseA - phaseB) * 60000 / TARGET_BPM;
-      diff = Math.min(diff, 60000 / TARGET_BPM - diff);
-      const result = diff < 30 ? 'PERFECT' : diff < 70 ? 'GOOD' : 'DESINCRONIZADO';
-      card.className = `score-card ${result === 'PERFECT' ? 'good' : result === 'GOOD' ? '' : 'bad'}`;
-      $('#score-title').textContent = result === 'DESINCRONIZADO' ? result : `${result} · BEATMATCH`;
-      $('#score-message').textContent = result === 'PERFECT' ? 'Fase alineada. ¡Mezcla limpia!' : result === 'GOOD' ? 'Muy cerca. Ajusta el jog imaginario.' : 'Desfase detectado. Pulsa SYNC y prueba otra vez.';
-      $('#score-value').textContent = `${Math.round(diff)} ms`;
-      $('#phase-readout').textContent = `FASE ${Math.round(diff)} MS`;
-    } else if (bpmDifference <= 0.5) {
-      card.className = 'score-card good'; $('#score-title').textContent = 'TEMPO ALINEADO';
-      $('#score-message').textContent = 'Ahora reproduce ambos decks para comprobar la fase.';
-      $('#score-value').textContent = `${b.bpm.toFixed(1)} BPM`;
-    } else {
-      card.className = 'score-card bad'; $('#score-title').textContent = 'AJUSTA EL PITCH';
-      $('#score-message').textContent = `Lleva el Deck B de ${b.bpm.toFixed(1)} a ${TARGET_BPM} BPM.`;
-      $('#score-value').textContent = `${(b.bpm - TARGET_BPM > 0 ? '+' : '')}${(b.bpm - TARGET_BPM).toFixed(1)}`;
-    }
+    const bpmDifference = Math.abs(a.bpm - b.bpm);
+    const phaseDifference = measurePhaseDifference(a, b);
+    const result = bpmDifference <= 0.5 && phaseDifference < 30 ? 'PERFECT' :
+      bpmDifference <= 2 && phaseDifference < 70 ? 'GOOD' : 'DESINCRONIZADO';
+    card.className = `score-card ${result === 'PERFECT' ? 'good' : result === 'GOOD' ? '' : 'bad'}`;
+    $('#score-title').textContent = result === 'DESINCRONIZADO' ? result : `${result} · BEATMATCH`;
+    const tempoText = `${bpmDifference.toFixed(1)} BPM de diferencia`;
+    $('#score-message').textContent = result === 'PERFECT'
+      ? `Tempo alineado y fase estable (${tempoText}). ¡Mezcla limpia!`
+      : result === 'GOOD'
+        ? `Casi: ${tempoText}, fase a ${Math.round(phaseDifference)} ms. Ajusta pitch o jog.`
+        : `Ajusta tempo y fase: ${tempoText}, fase a ${Math.round(phaseDifference)} ms.`;
+    $('#score-value').textContent = `${Math.round(phaseDifference)} ms · ${bpmDifference.toFixed(1)} BPM`;
+    $('#phase-readout').textContent = `FASE ${Math.round(phaseDifference)} MS`;
   }
 
   function setStatus(text) { $('#audio-status').textContent = text; }
@@ -359,6 +506,29 @@
       loadA.addEventListener('click', () => loadLibraryTrack(track, 'a')); loadB.addEventListener('click', () => loadLibraryTrack(track, 'b'));
       action.append(loadA, document.createTextNode(' '), loadB); row.append(name, duration, bpm, source, action); return row;
     }));
+  }
+
+  async function importLibraryFile(file) {
+    if (!file || file.size > 1024 * 1024) { toast('El archivo JSON supera el límite de 1 MB.'); return; }
+    try {
+      const payload = JSON.parse(await file.text());
+      if (!payload || payload.version !== 1 || !Array.isArray(payload.tracks) || payload.tracks.length > 100) {
+        throw new Error('Formato o versión no compatible.');
+      }
+      const imported = payload.tracks.map(normalizeLibraryTrack);
+      if (!imported.length || imported.some(track => !track)) throw new Error('Hay pistas inválidas en el archivo.');
+      for (const track of imported) {
+        const existing = library.findIndex(item => item.name === track.name && item.source === track.source);
+        if (existing >= 0) library[existing] = track;
+        else library.unshift(track);
+      }
+      library.splice(100);
+      persistLibrary();
+      renderLibrary();
+      toast(`Se importaron ${imported.length} pistas. Los archivos de audio no están incluidos.`);
+    } catch (error) {
+      toast(`No se importó la biblioteca: ${error.message || 'JSON inválido.'}`);
+    }
   }
 
   function loadLibraryTrack(track, id) {
@@ -538,20 +708,78 @@
     $('#midi-button').classList.toggle('midi-active', connected);
   }
 
+  function midiMessageLabel(mapping) {
+    return `${mapping.type === 'note' ? 'Nota' : 'CC'} ${mapping.number} · canal ${mapping.channel + 1}`;
+  }
+
+  function updateMidiLearnStatus() {
+    const target = $('#midi-target-select').value;
+    const mapping = midiMap[target];
+    const status = $('#midi-learn-status');
+    status.textContent = midiLearnEnabled
+      ? `ESCUCHANDO · ${MIDI_LABELS[target] || target}`
+      : mapping ? `${MIDI_LABELS[target] || target} · ${midiMessageLabel(mapping)}` : 'MIDI · asignación universal';
+    $('#midi-learn-toggle').textContent = midiLearnEnabled ? 'CANCELAR APRENDIZAJE' : 'APRENDER CONTROL';
+    $('#midi-learn-toggle').classList.toggle('midi-active', midiLearnEnabled);
+  }
+
   function handleMidi(event) {
     const [status, data1, data2] = event.data;
     const command = status & 0xf0;
     const channel = status & 0x0f;
-    if ((command === 0x90 || command === 0x80) && data2 > 0) {
-      // Standard channel-1 notes: 60 toggles Deck A, 61 toggles Deck B.
-      if (channel === 0 && data1 === 60) playDeck('a');
-      if (channel === 0 && data1 === 61) playDeck('b');
+    const isNote = command === 0x90 && data2 > 0;
+    const isCC = command === 0xb0;
+    if (midiLearnEnabled && (isNote || isCC)) {
+      const target = $('#midi-target-select').value;
+      midiMap[target] = { type: isNote ? 'note' : 'cc', number: data1, channel };
+      midiLearnEnabled = false;
+      midiLearnTarget = null;
+      persistMidiMap();
+      updateMidiLearnStatus();
+      toast(`${MIDI_LABELS[target] || target}: ${midiMessageLabel(midiMap[target])}`);
       return;
     }
-    if (command === 0xb0) {
-      if (data1 === 7) { $('[data-volume="a"]').value = Math.round(data2 / 127 * 100); setVolume('a', data2 / 127); }
-      if (data1 === 8) { $('[data-volume="b"]').value = Math.round(data2 / 127 * 100); setVolume('b', data2 / 127); }
-      if (data1 === 9) setCrossfader(Math.round(data2 / 127 * 100));
+    for (const [target, mapping] of Object.entries(midiMap)) {
+      if (mapping.channel !== channel || data1 !== mapping.number) continue;
+      if (mapping.type === 'note' && isNote) {
+        if (target.startsWith('play-')) playDeck(target.slice(-1));
+        else if (target.startsWith('cue-')) cueDeck(target.slice(-1));
+        else if (target.startsWith('sync-')) syncDeck(target.slice(-1));
+        else if (target.startsWith('jog-')) nudgeDeck(target.slice(-1), 0.025);
+      } else if (mapping.type === 'cc' && isCC) {
+        dispatchMidiControl(target, data2);
+      }
+    }
+  }
+
+  function dispatchMidiControl(target, value) {
+    if (value > 0 && target.startsWith('play-')) { playDeck(target.slice(-1)); return; }
+    if (value > 0 && target.startsWith('cue-')) { cueDeck(target.slice(-1)); return; }
+    if (value > 0 && target.startsWith('sync-')) { syncDeck(target.slice(-1)); return; }
+    if (target.startsWith('jog-')) {
+      const delta = value > 64 ? value - 128 : value;
+      if (delta) nudgeDeck(target.slice(-1), Math.sign(delta) * Math.min(Math.abs(delta), 8) * 0.012);
+      return;
+    }
+    const controls = {
+      'volume-a': $('[data-volume="a"]'), 'volume-b': $('[data-volume="b"]'),
+      'pitch-a': $('[data-pitch="a"]'), 'pitch-b': $('[data-pitch="b"]'),
+      'eq-a-low': $('[data-eq="low"][data-deck="a"]'), 'eq-a-mid': $('[data-eq="mid"][data-deck="a"]'), 'eq-a-high': $('[data-eq="high"][data-deck="a"]'),
+      'eq-b-low': $('[data-eq="low"][data-deck="b"]'), 'eq-b-mid': $('[data-eq="mid"][data-deck="b"]'), 'eq-b-high': $('[data-eq="high"][data-deck="b"]'),
+      crossfader: $('#crossfader')
+    };
+    const input = controls[target];
+    if (!input) return;
+    const min = Number(input.min || 0), max = Number(input.max || 127);
+    input.value = String(min + (value / 127) * (max - min));
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  function nudgeDeck(id, seconds) {
+    const audio = decks[id]?.audio;
+    if (audio?.src && Number.isFinite(audio.duration)) {
+      audio.currentTime = Math.max(0, Math.min(audio.duration, audio.currentTime + seconds));
+      updatePhase();
     }
   }
 
@@ -609,6 +837,22 @@
   $('#crossfader').addEventListener('input', event => { ensureAudio(); setCrossfader(event.target.value); });
   $('#check-beat').addEventListener('click', checkMix);
   $('#midi-button').addEventListener('click', enableMidi);
+  $('#midi-target-select').addEventListener('change', () => { midiLearnEnabled = false; updateMidiLearnStatus(); });
+  $('#midi-learn-toggle').addEventListener('click', () => {
+    midiLearnEnabled = !midiLearnEnabled;
+    midiLearnTarget = midiLearnEnabled ? $('#midi-target-select').value : null;
+    updateMidiLearnStatus();
+    if (midiLearnEnabled && !midiAccess) enableMidi();
+    if (midiLearnEnabled) toast(`Mueve un control MIDI para asignar ${MIDI_LABELS[midiLearnTarget] || midiLearnTarget}.`);
+  });
+  $('#midi-clear-maps').addEventListener('click', () => {
+    for (const target of Object.keys(midiMap)) delete midiMap[target];
+    persistMidiMap(); updateMidiLearnStatus(); toast('Asignaciones MIDI reiniciadas.');
+  });
+  $('#import-library-file').addEventListener('change', event => {
+    importLibraryFile(event.target.files?.[0]);
+    event.target.value = '';
+  });
   $('#export-library').addEventListener('click', () => {
     const blob = new Blob([JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), tracks: library }, null, 2)], { type: 'application/json' });
     const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'djlab-library.json'; link.click();

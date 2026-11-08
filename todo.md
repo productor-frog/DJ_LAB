@@ -1,3 +1,6 @@
 # Cola de trabajo
 
-- [ ] [B] Extensión diferida solicitada: FFT/análisis por bandas y BPM estimado, evaluación de sincronía PERFECT/GOOD/DESINCRONIZADO, mapa MIDI universal con fader/jog, y persistencia Local-First con exportación/importación JSON. Alcance seguro: audio local/de demostración; no extracción ni proxy de streams de YouTube.
+- [x] [B] Añadir análisis FFT por bandas y estimación de BPM solo a demos/audio local; nunca analizar ni mezclar el stream de YouTube.
+- [x] [B] Puntuar beatmatch por diferencia de tempo y fase, con estados PERFECT/GOOD/DESINCRONIZADO y lectura explicativa.
+- [x] [B] Añadir MIDI learn universal (notas/CC), controles de fader y jog relativo con persistencia de asignaciones.
+- [x] [B] Importar y exportar metadatos de biblioteca como JSON, validando el formato y sin incluir audio local.
