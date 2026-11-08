@@ -1,10 +1,12 @@
 # Handoff
 
 ## Estado
+- Completado: selección y reproducción independiente de pistas de la playlist oficial de YouTube en Deck A y Deck B mediante reproductores oficiales; el audio sigue fuera del mixer.
+- Plan ejecutado: añadir un reproductor oficial por deck, conectar los botones A/B, actualizar interfaz/documentación y verificar selección, proporción visual, estados, sintaxis y consola.
 - DJ Lab es una app estática de HTML/CSS/JavaScript, sin backend ni dependencias de framework.
-- Último checkpoint: `6312cca` (`chore(process): install SOP and close handoff`), ya publicado en `origin/main`; árbol limpio al cierre.
+- Último checkpoint previo a esta tarea: `062d16e` (`docs(handoff): record current SOP checkpoint`), publicado en `origin/main`. La tarea actual está lista para checkpoint atómico.
 - El audio del mixer se limita a demos generadas localmente y archivos que el usuario elige en su dispositivo. No se extrae, analiza ni enruta audio de YouTube.
-- La playlist de YouTube sigue separada en su reproductor incrustado; su API oficial expone IDs y títulos, y los botones A/B abren un selector de archivo local.
+- La API oficial de YouTube expone la playlist; cada botón A/B carga la pista en el reproductor oficial correspondiente, sin pedir archivos locales.
 
 ## Implementación
 - Análisis FFT en vivo de bandas low/mid/high y estimación de BPM durante demos/audio local.
@@ -15,16 +17,16 @@
 
 ## Verificación
 - `node --check app.js` y `git diff --check` pasan.
-- Chromium en `http://localhost:3002`: demos de Deck A/B, BPM (120.0/124.0), lecturas de bandas y feedback de fase/puntuación observados.
-- WebMIDI simulado en Chromium: aprendió CC 22 canal 3 para volumen A, persistió el mapeo y el siguiente mensaje ajustó el fader.
-- Importación de JSON válido mostró y persistió dos pistas demo/local; un archivo de versión no compatible fue rechazado sin alterar la biblioteca. La exportación descargada contenía versión/metadatos, sin audio.
-- `playwright-cli console error`: cero errores y advertencias en la prueba.
+- Chromium en `http://localhost:3002`: los dos iframes oficiales por deck mantienen proporción 16:9 (359×202 px); al seleccionar pistas distintas, los estados de A/B se actualizaron de forma independiente. Una pista de prueba no permitió incrustación y mostró el aviso esperado para abrirla en YouTube Music.
+- `playwright-cli console error`: cero errores. Queda una advertencia de `postMessage` emitida por `www-widgetapi.vflset/www-widgetapi.js`: target `youtube-nocookie.com` frente al origen local `http://localhost:3002`; parece externa al código de la app y no impidió inicializar ni controlar los reproductores.
+- Verificación final de esta tarea: `node --check app.js`, `git diff --check` y revisión del diff.
+- Verificaciones previas conservadas: Chromium mostró BPM/bandas/beatmatch, WebMIDI simulado aprendió CC 22 canal 3 y la importación/exportación JSON validó metadatos sin incluir audio.
 - `screenshots/baseline.jpg` es la captura compacta actualizada (ignorada por Git).
 
 ## Cierre y siguiente paso
 - La instalación inicial del SOP está en `AGENTS.md`; `Agents.md` original se conserva sin cambios. `save-000` apunta al baseline verificado `548f76d`.
-- Gate baseline aprobado: `node --check app.js`, `git diff --check`, servidor HTTP local y `playwright-cli console error` (sin errores/advertencias); Chromium cargó la interfaz DJ Lab.
-- Forensis del último checkpoint: el diff rescatado en `main` implementa análisis/BPM, beatmatch, MIDI y JSON validado; HANDOFF decía erróneamente pendiente de commit. No queda código de aplicación huérfano.
-- Censo de issues bloqueado: `gh auth status` no está autenticado y GH_TOKEN falta; no se pudieron listar ni mantener issues. Forensis del checkpoint de issue #3: instaló SOP y actualizó handoff/solicitud; no hay código de aplicación huérfano ni rescate pendiente.
-- La solicitud detallada de `user-requests.md` ya está completada por el checkpoint `548f76d`.
-- Próximo paso: continuar con «Seguí el SOP en AGENTS.md»; autenticar GitHub antes de solicitar censo/sepultura de issues.
+- La tarea YouTube pasó sintaxis, revisión de diff y prueba visual/interactiva; consola con cero errores y una advertencia externa de `postMessage` documentada arriba.
+- Forensis del checkpoint previo: el último checkpoint publicado implementó las instrucciones del SOP y actualizó handoff/solicitud; no había código de aplicación huérfano ni rescate pendiente.
+- Censo de issues bloqueado: `gh auth status` informa que no hay sesión de GitHub, por lo que no se pudieron listar ni mantener issues. El push de este checkpoint debe intentarse una vez; si falta permiso, reportarlo sin reintentar.
+- Las solicitudes registradas en `user-requests.md`, incluida la reproducción directa de YouTube por deck, están completadas.
+- Próximo paso: continuar con «Seguí el SOP en AGENTS.md»; autenticar GitHub antes del siguiente censo/sepultura de issues.
