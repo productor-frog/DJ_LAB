@@ -4,7 +4,7 @@
 - Completado: selección y reproducción independiente de pistas de la playlist oficial de YouTube en Deck A y Deck B mediante reproductores oficiales; el audio sigue fuera del mixer.
 - Plan ejecutado: añadir un reproductor oficial por deck, conectar los botones A/B, actualizar interfaz/documentación y verificar selección, proporción visual, estados, sintaxis y consola.
 - DJ Lab es una app estática de HTML/CSS/JavaScript, sin backend ni dependencias de framework.
-- Último checkpoint previo a esta tarea: `062d16e` (`docs(handoff): record current SOP checkpoint`), publicado en `origin/main`. La tarea actual está lista para checkpoint atómico.
+- Checkpoint funcional publicado en `origin/main`: `fa2ee7a` (`feat(youtube): play playlist tracks on each deck`).
 - El audio del mixer se limita a demos generadas localmente y archivos que el usuario elige en su dispositivo. No se extrae, analiza ni enruta audio de YouTube.
 - La API oficial de YouTube expone la playlist; cada botón A/B carga la pista en el reproductor oficial correspondiente, sin pedir archivos locales.
 
@@ -27,6 +27,6 @@
 - La instalación inicial del SOP está en `AGENTS.md`; `Agents.md` original se conserva sin cambios. `save-000` apunta al baseline verificado `548f76d`.
 - La tarea YouTube pasó sintaxis, revisión de diff y prueba visual/interactiva; consola con cero errores y una advertencia externa de `postMessage` documentada arriba.
 - Forensis del checkpoint previo: el último checkpoint publicado implementó las instrucciones del SOP y actualizó handoff/solicitud; no había código de aplicación huérfano ni rescate pendiente.
-- Censo de issues bloqueado: `gh auth status` informa que no hay sesión de GitHub, por lo que no se pudieron listar ni mantener issues. El push de este checkpoint debe intentarse una vez; si falta permiso, reportarlo sin reintentar.
-- Las solicitudes registradas en `user-requests.md`, incluida la reproducción directa de YouTube por deck, están completadas.
+- Censo de issues bloqueado: `gh auth status` informa que no hay sesión de GitHub, por lo que no se pudieron listar ni mantener issues.
+- Las solicitudes registradas en `user-requests.md`, incluida la reproducción directa de YouTube por deck, están completadas. El checkpoint funcional `fa2ee7a` se publicó por fast-forward en `origin/main`.
 - Próximo paso: continuar con «Seguí el SOP en AGENTS.md»; autenticar GitHub antes del siguiente censo/sepultura de issues.
