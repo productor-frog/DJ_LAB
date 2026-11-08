@@ -4,9 +4,13 @@
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
   const STORAGE_KEY = 'djlab-library-v1';
+  const YOUTUBE_PLAYLIST_ID = 'PLSaUi107fadQ';
   const TARGET_BPM = 120;
   const decks = {};
   const mixPlaylist = [];
+  const youtubeTitles = new Map();
+  const youtubeLocalMatches = new Map();
+  let youtubePlayer;
   let audioContext;
   let crossPosition = 0.5;
   let toastTimer;
@@ -422,6 +426,98 @@
     }));
   }
 
+  function initYouTubePlayer() {
+    window.onYouTubeIframeAPIReady = () => {
+      youtubePlayer = new window.YT.Player('youtube-player', {
+        events: {
+          onReady: () => {
+            refreshYouTubePlaylist();
+            window.setTimeout(refreshYouTubePlaylist, 1200);
+          },
+          onStateChange: refreshYouTubePlaylist
+        }
+      });
+    };
+    const script = document.createElement('script');
+    script.src = 'https://www.youtube.com/iframe_api';
+    script.async = true;
+    script.onerror = () => {
+      $('#youtube-playlist-status').textContent = 'No se pudieron cargar los metadatos. El reproductor o el enlace externo siguen disponibles.';
+    };
+    document.head.append(script);
+  }
+
+  function refreshYouTubePlaylist() {
+    if (!youtubePlayer) return;
+    let ids = [];
+    try {
+      ids = youtubePlayer.getPlaylist() || [];
+      const current = youtubePlayer.getVideoData?.();
+      if (current?.video_id && current.title) youtubeTitles.set(current.video_id, current.title);
+    } catch { /* El reproductor aún puede estar inicializándose. */ }
+
+    const uniqueIds = [...new Set(ids.filter(id => typeof id === 'string' && id))];
+    if (!uniqueIds.length) {
+      $('#youtube-playlist-status').textContent = 'YouTube todavía no expone las pistas. Inicia la playlist en el reproductor para cargar la lista.';
+      return;
+    }
+    const currentIndex = youtubePlayer.getPlaylistIndex?.();
+    $('#youtube-playlist-status').textContent = `${uniqueIds.length} pistas · los títulos se completan cuando YouTube los expone al reproducirlos`;
+    const list = $('#youtube-track-list');
+    list.replaceChildren(...uniqueIds.map((videoId, index) => {
+      const item = document.createElement('li');
+      item.className = 'youtube-track-item';
+      if (index === currentIndex) item.classList.add('is-current');
+
+      const details = document.createElement('span');
+      details.className = 'youtube-track-details';
+      const title = document.createElement('strong');
+      title.textContent = youtubeTitles.get(videoId) || `Pista ${index + 1}`;
+      const subtitle = document.createElement('small');
+      subtitle.textContent = youtubeTitles.has(videoId) ? 'YouTube Music · información del reproductor' : `YouTube · ${videoId}`;
+      details.append(title, subtitle);
+
+      const match = youtubeLocalMatches.get(videoId);
+      if (match) {
+        const local = document.createElement('small');
+        local.className = 'youtube-local-match';
+        local.textContent = `Archivo local elegido: ${match}`;
+        details.append(local);
+      }
+
+      const actions = document.createElement('span');
+      actions.className = 'youtube-track-actions';
+      for (const deck of ['a', 'b']) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'table-load';
+        button.textContent = deck.toUpperCase();
+        button.title = `Elegir un archivo local para Deck ${deck.toUpperCase()}`;
+        button.setAttribute('aria-label', `Elegir un archivo local para Deck ${deck.toUpperCase()} en ${title.textContent}`);
+        button.addEventListener('click', () => chooseLocalFileForYouTube(videoId, deck));
+        actions.append(button);
+      }
+      item.append(details, actions);
+      return item;
+    }));
+  }
+
+  function chooseLocalFileForYouTube(videoId, deck) {
+    const picker = document.createElement('input');
+    picker.type = 'file';
+    picker.accept = 'audio/*';
+    picker.addEventListener('change', () => {
+      const file = picker.files?.[0];
+      if (!file) return;
+      if (!file.type.startsWith('audio/')) { toast('Elige un archivo de audio compatible.'); return; }
+      youtubeLocalMatches.set(videoId, file.name);
+      loadLocalFile(file, deck);
+      refreshYouTubePlaylist();
+      toast(`Se cargó un archivo local en Deck ${deck.toUpperCase()}; YouTube no se conecta al mixer.`);
+    }, { once: true });
+    picker.click();
+  }
+
   async function enableMidi() {
     if (!navigator.requestMIDIAccess) { toast('WebMIDI no está disponible en este navegador.'); return; }
     try {
@@ -525,6 +621,7 @@
     $(`#audio-${id}`).addEventListener('ended', () => updateTransport(id));
   }
   renderLibrary();
+  initYouTubePlayer();
   setCrossfader(50);
   requestAnimationFrame(animate);
 })();
