@@ -29,4 +29,5 @@
 - Forensis del checkpoint previo: el último checkpoint publicado implementó las instrucciones del SOP y actualizó handoff/solicitud; no había código de aplicación huérfano ni rescate pendiente.
 - Censo de issues bloqueado: `gh auth status` informa que no hay sesión de GitHub, por lo que no se pudieron listar ni mantener issues.
 - Las solicitudes registradas en `user-requests.md`, incluida la reproducción directa de YouTube por deck, están completadas. El checkpoint funcional `fa2ee7a` se publicó por fast-forward en `origin/main`.
+- Forensis de `origin/opencode-checkpoints/3` (seis commits únicos): su árbol coincide con `origin/main` fuera de `.omgithub/checkpoint.json` y `.omgithub/conversation.json`; no contiene cambios pendientes de app o documentación. No se absorbió ni eliminó: se conserva intacta como checkpoint histórico porque esos metadatos/conversación son opacos y el censo remoto sigue bloqueado por falta de autenticación.
 - Próximo paso: continuar con «Seguí el SOP en AGENTS.md»; autenticar GitHub antes del siguiente censo/sepultura de issues.
