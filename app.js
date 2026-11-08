@@ -773,7 +773,7 @@
       return;
     }
     for (const [target, mapping] of Object.entries(midiMap)) {
-      if (mapping.channel !== channel || data1 !== mapping.number) continue;
+      if (!mapping || mapping.channel !== channel || data1 !== mapping.number) continue;
       if (mapping.type === 'note' && isNote) {
         if (target.startsWith('play-')) playDeck(target.slice(-1));
         else if (target.startsWith('cue-')) cueDeck(target.slice(-1));
