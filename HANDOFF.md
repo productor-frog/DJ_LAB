@@ -30,3 +30,11 @@
 - La captura compacta de revisión está en `/tmp/opencode/dj-lab.jpg` (no se versiona).
 - Se publicó el checkpoint de esta sesión a `main` por fast-forward y se creó el tag `save-003` tras la verificación. No se reescribieron tags preexistentes.
 - Próximo paso: continuar con «Seguí el SOP en AGENTS.md». El censo de issues sigue pendiente de autenticación (`gh auth status`: sin sesión).
+
+## Cierre de checkpoint — 2026-11-08
+- Se integró `origin/opencode-checkpoints/5` (`c4e0394`) por fast-forward; solo actualiza metadatos de checkpoint/conversación, no modifica archivos de la app.
+- `c4e0394` quedó publicado en `origin/main` por fast-forward. Se conservó `save-004`; no se creó otro tag porque este checkpoint no representa un nuevo hito visible.
+- Verificación final: `node --check app.js`, `git diff --check`, HTTP 200 en `http://127.0.0.1:3002/` y Playwright sin errores de consola (una advertencia externa).
+- La cola de `todo.md`, el roadmap y las solicitudes registradas están completas. El censo de issues no pudo hacerse porque `gh auth status` indica que no hay sesión.
+- Se conservaron las ramas remotas de checkpoint/deployment; no se descartó trabajo no inspeccionado.
+- Próximo: esperar la siguiente solicitud y, al reanclar, seguir `AGENTS.md`.
