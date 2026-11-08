@@ -1,3 +1,3 @@
 # Roadmap
 
-- [ ] Completar boot y verificar la aplicación en navegador.
+- [x] Completar boot, limpiar ramas huérfanas y verificar la aplicación en navegador.
