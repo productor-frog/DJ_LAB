@@ -9,9 +9,11 @@
 ## Verificación
 - `node --check app.js` y `git diff --check` pasan.
 - Verificación real en Chromium: demos y transporte, feedback de beatmatch, SYNC, pitch, EQ, volumen, crossfader y cue/play; biblioteca persistida y exportación JSON.
-- `playwright-cli console`: cero errores y advertencias. Captura revisada en `screenshots/dj-lab-final.png` (ignorada por Git).
+- Verificación reciente: Chromium mostró 127 pistas de YouTube; la API expuso el título de la pista actual. Se eligió `/tmp/opencode/djlab-test.wav` desde el botón A de esa pista y Deck A mostró `djlab-test` con duración de 1 s. El audio seleccionado fue local (URL `blob:`); no se conectó audio de YouTube al mixer.
+- `playwright-cli console`: cero errores y advertencias en la prueba reciente. Se revisó visualmente la cabina y la lista: se mantienen los decks A/B, controles de mezcla y reproductor/lista de YouTube separados. Captura previa en `screenshots/dj-lab-final.png` (ignorada por Git).
 - El servidor local de verificación está en `http://localhost:3002`.
-- Se añadió el reproductor incrustado de la playlist compartida a la biblioteca. Permite escucharla dentro de DJ Lab; la reproducción de YouTube permanece separada de los decks de mezcla.
+- La playlist compartida conserva su reproductor incrustado y ahora consulta la lista de IDs y el título del elemento actual mediante la API oficial de YouTube IFrame Player. Los títulos se completan cuando YouTube los expone al reproducir las canciones; los botones A/B abren un selector de audio local para cargar al deck. El audio de YouTube nunca se conecta al mixer.
+- La cola temporal de audios locales se mantiene asignable a Deck A/B; no se suben archivos.
 
 ## Decisiones y alcance diferido
 - La demo autocontenida genera percusión en el navegador para permitir practicar sin cargar pistas.
