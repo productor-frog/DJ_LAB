@@ -23,6 +23,14 @@
 - Verificaciones previas conservadas: Chromium mostró BPM/bandas/beatmatch, WebMIDI simulado aprendió CC 22 canal 3 y la importación/exportación JSON validó metadatos sin incluir audio.
 - `screenshots/baseline.jpg` es la captura compacta actualizada (ignorada por Git).
 
+## Completado — guía accionable de beatmatch
+- Se calcula el desfase firmado entre A/B y se orienta pitch por diferencia de tempo y jog por fase; Deck A es la referencia y Deck B el deck que se corrige. Pitch corrige tempo y jog corrige fase instantánea; no se toca el audio ni se alteran los umbrales de evaluación.
+- `README.md`, `todo.md`, `roadmap/01-dj-lab.md` y `user-requests.md` documentan el cambio.
+- Chromium/Playwright en `http://127.0.0.1:3002/`, viewport 1280×900: Deck B más rápido/adelantado indicó bajar PITCH B y frenar con JOG B; más lento/atrasado indicó subir PITCH B y empujar con JOG B; alineado puntuó `PERFECT · BEATMATCH`.
+- Consola: cero errores (dos advertencias observadas); `node --check app.js` y `git diff --check` pasan.
+- Captura JPEG compacta inspeccionada: `/tmp/opencode/dj-lab-beatmatch.jpg` (1280×900, solo viewport; no versionada).
+- Censo de issues pendiente: `gh auth status` no encuentra una sesión autenticada.
+
 ## Cierre y siguiente paso
 - La instalación inicial del SOP está en `AGENTS.md`; `Agents.md` original se conserva sin cambios. Los tags `save-000` y `save-002` no se modificaron.
 - Boot del 2026-11-08: leídos los cinco archivos de `00_cerebro_loop/`; `origin/opencode-checkpoints/4` se integró por fast-forward (solo metadatos de checkpoint) y luego se eliminó del remoto. No había ramas `opencode-resume/*` ni conflictos; `origin/main` ya estaba integrado.

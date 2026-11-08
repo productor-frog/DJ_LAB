@@ -450,11 +450,11 @@
     $('#phase-readout').textContent = a.audio.src && b.audio.src ? `FASE ${Math.round(delta)} MS` : 'FASE —';
   }
 
-  function measurePhaseDifference(a, b) {
+  function measurePhaseOffset(a, b) {
     const phaseA = ((a.audio.currentTime * a.bpm / 60) % 1 + 1) % 1;
     const phaseB = ((b.audio.currentTime * b.bpm / 60) % 1 + 1) % 1;
-    const beatFraction = Math.min(Math.abs(phaseA - phaseB), 1 - Math.abs(phaseA - phaseB));
-    return beatFraction * 60000 / Math.max(1, (a.bpm + b.bpm) / 2);
+    const beatOffset = ((phaseB - phaseA + 1.5) % 1) - 0.5;
+    return beatOffset * 60000 / Math.max(1, (a.bpm + b.bpm) / 2);
   }
 
   function checkMix() {
@@ -466,17 +466,21 @@
       $('#score-message').textContent = 'Carga o inicia las demos en ambos decks.'; $('#score-value').textContent = '—'; return;
     }
     const bpmDifference = Math.abs(a.bpm - b.bpm);
-    const phaseDifference = measurePhaseDifference(a, b);
+    const phaseOffset = measurePhaseOffset(a, b);
+    const phaseDifference = Math.abs(phaseOffset);
     const result = bpmDifference <= 0.5 && phaseDifference < 30 ? 'PERFECT' :
       bpmDifference <= 2 && phaseDifference < 70 ? 'GOOD' : 'DESINCRONIZADO';
     card.className = `score-card ${result === 'PERFECT' ? 'good' : result === 'GOOD' ? '' : 'bad'}`;
     $('#score-title').textContent = result === 'DESINCRONIZADO' ? result : `${result} · BEATMATCH`;
     const tempoText = `${bpmDifference.toFixed(1)} BPM de diferencia`;
-    $('#score-message').textContent = result === 'PERFECT'
+    const message = result === 'PERFECT'
       ? `Tempo alineado y fase estable (${tempoText}). ¡Mezcla limpia!`
-      : result === 'GOOD'
-        ? `Casi: ${tempoText}, fase a ${Math.round(phaseDifference)} ms. Ajusta pitch o jog.`
-        : `Ajusta tempo y fase: ${tempoText}, fase a ${Math.round(phaseDifference)} ms.`;
+      : [
+          bpmDifference <= 0.5 ? 'Tempo alineado.' : b.bpm > a.bpm ? 'Deck B va más rápido: baja PITCH B.' : 'Deck B va más lento: sube PITCH B.',
+          phaseDifference < 30 ? 'Fase suficientemente alineada.' : phaseOffset > 0 ? `Deck B va adelantado ${Math.round(phaseDifference)} ms: frena con JOG B.` : `Deck B va atrasado ${Math.round(phaseDifference)} ms: empuja con JOG B.`,
+          `${tempoText}.`
+        ].join(' ');
+    $('#score-message').textContent = message;
     $('#score-value').textContent = `${Math.round(phaseDifference)} ms · ${bpmDifference.toFixed(1)} BPM`;
     $('#phase-readout').textContent = `FASE ${Math.round(phaseDifference)} MS`;
   }
