@@ -12,7 +12,9 @@
   const decks = {};
   const mixPlaylist = [];
   const youtubeTitles = new Map();
-  const youtubeLocalMatches = new Map();
+  const youtubeDeckPlayers = new Map();
+  const youtubeDeckReady = new Set();
+  const youtubeDeckVideos = new Map();
   let youtubePlayer;
   let audioContext;
   let crossPosition = 0.5;
@@ -607,14 +609,65 @@
           onStateChange: refreshYouTubePlaylist
         }
       });
+      for (const deck of ['a', 'b']) {
+        const player = new window.YT.Player(`youtube-deck-player-${deck}`, {
+          playerVars: { playsinline: 1, rel: 0 },
+          events: {
+            onReady: () => {
+              youtubeDeckReady.add(deck);
+              const videoId = youtubeDeckVideos.get(deck);
+              if (videoId) playYouTubeTrack(videoId, deck);
+              else setYouTubeDeckStatus(deck, 'Listo · elige una pista de la playlist');
+            },
+            onStateChange: event => updateYouTubeDeckState(deck, event),
+            onError: event => updateYouTubeDeckError(deck, event.data),
+            onAutoplayBlocked: () => setYouTubeDeckStatus(deck, 'Pulsa reproducir dentro del reproductor de YouTube')
+          }
+        });
+        youtubeDeckPlayers.set(deck, player);
+      }
     };
     const script = document.createElement('script');
     script.src = 'https://www.youtube.com/iframe_api';
     script.async = true;
     script.onerror = () => {
       $('#youtube-playlist-status').textContent = 'No se pudieron cargar los metadatos. El reproductor o el enlace externo siguen disponibles.';
+      for (const deck of ['a', 'b']) setYouTubeDeckStatus(deck, 'No se pudo cargar YouTube. Comprueba tu conexión o abre la playlist externa.');
     };
     document.head.append(script);
+  }
+
+  function setYouTubeDeckStatus(deck, message) {
+    $(`#youtube-deck-status-${deck}`).textContent = message;
+  }
+
+  function playYouTubeTrack(videoId, deck) {
+    const player = youtubeDeckPlayers.get(deck);
+    if (!player || !youtubeDeckReady.has(deck)) return;
+    youtubeDeckVideos.set(deck, videoId);
+    setYouTubeDeckStatus(deck, `Cargando · ${youtubeTitles.get(videoId) || videoId}`);
+    player.loadVideoById(videoId);
+  }
+
+  function updateYouTubeDeckState(deck, event) {
+    const player = youtubeDeckPlayers.get(deck);
+    if (!player) return;
+    const state = event.data;
+    const video = player.getVideoData?.();
+    if (video?.video_id && video.title) youtubeTitles.set(video.video_id, video.title);
+    const title = video?.title || youtubeTitles.get(youtubeDeckVideos.get(deck)) || 'Pista de YouTube';
+    if (state === window.YT.PlayerState.PLAYING) setYouTubeDeckStatus(deck, `Reproduciendo · ${title}`);
+    else if (state === window.YT.PlayerState.PAUSED) setYouTubeDeckStatus(deck, `En pausa · ${title}`);
+    else if (state === window.YT.PlayerState.ENDED) setYouTubeDeckStatus(deck, `Finalizada · ${title}`);
+    else if (state === window.YT.PlayerState.CUED) setYouTubeDeckStatus(deck, `Lista · ${title}`);
+    refreshYouTubePlaylist();
+  }
+
+  function updateYouTubeDeckError(deck, code) {
+    const message = code === 101 || code === 150
+      ? 'Esta pista no permite reproducción incrustada. Ábrela en YouTube Music.'
+      : 'YouTube no pudo reproducir esta pista. Inténtalo de nuevo o abre la playlist.';
+    setYouTubeDeckStatus(deck, message);
   }
 
   function refreshYouTubePlaylist() {
@@ -647,14 +700,6 @@
       subtitle.textContent = youtubeTitles.has(videoId) ? 'YouTube Music · información del reproductor' : `YouTube · ${videoId}`;
       details.append(title, subtitle);
 
-      const match = youtubeLocalMatches.get(videoId);
-      if (match) {
-        const local = document.createElement('small');
-        local.className = 'youtube-local-match';
-        local.textContent = `Archivo local elegido: ${match}`;
-        details.append(local);
-      }
-
       const actions = document.createElement('span');
       actions.className = 'youtube-track-actions';
       for (const deck of ['a', 'b']) {
@@ -662,30 +707,18 @@
         button.type = 'button';
         button.className = 'table-load';
         button.textContent = deck.toUpperCase();
-        button.title = `Elegir un archivo local para Deck ${deck.toUpperCase()}`;
-        button.setAttribute('aria-label', `Elegir un archivo local para Deck ${deck.toUpperCase()} en ${title.textContent}`);
-        button.addEventListener('click', () => chooseLocalFileForYouTube(videoId, deck));
+        button.title = `Reproducir desde YouTube en Deck ${deck.toUpperCase()}`;
+        button.setAttribute('aria-label', `Reproducir ${title.textContent} desde YouTube en Deck ${deck.toUpperCase()}`);
+        button.addEventListener('click', () => {
+          youtubeDeckVideos.set(deck, videoId);
+          if (youtubeDeckReady.has(deck)) playYouTubeTrack(videoId, deck);
+          else setYouTubeDeckStatus(deck, 'Conectando con el reproductor oficial de YouTube…');
+        });
         actions.append(button);
       }
       item.append(details, actions);
       return item;
     }));
-  }
-
-  function chooseLocalFileForYouTube(videoId, deck) {
-    const picker = document.createElement('input');
-    picker.type = 'file';
-    picker.accept = 'audio/*';
-    picker.addEventListener('change', () => {
-      const file = picker.files?.[0];
-      if (!file) return;
-      if (!file.type.startsWith('audio/')) { toast('Elige un archivo de audio compatible.'); return; }
-      youtubeLocalMatches.set(videoId, file.name);
-      loadLocalFile(file, deck);
-      refreshYouTubePlaylist();
-      toast(`Se cargó un archivo local en Deck ${deck.toUpperCase()}; YouTube no se conecta al mixer.`);
-    }, { once: true });
-    picker.click();
   }
 
   async function enableMidi() {
