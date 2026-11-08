@@ -38,3 +38,9 @@
 - La cola de `todo.md`, el roadmap y las solicitudes registradas están completas. El censo de issues no pudo hacerse porque `gh auth status` indica que no hay sesión.
 - Se conservaron las ramas remotas de checkpoint/deployment; no se descartó trabajo no inspeccionado.
 - Próximo: esperar la siguiente solicitud y, al reanclar, seguir `AGENTS.md`.
+
+## Boot posterior — 2026-11-08
+- Se integró `origin/opencode-checkpoints/5` (`88de66e`) sin conflictos mediante merge; el diff efectivo incorporó únicamente metadatos de checkpoint/conversación.
+- La app pasó `node --check app.js`, `git diff --check`, respuesta HTTP 200 y Playwright sin errores de consola (una advertencia externa).
+- Se preserva el protocolo vigente de `AGENTS.md`; no se reemplazan sus reglas por instrucciones que ordenen eliminar ramas no inspeccionadas o resolver conflictos automáticamente.
+- Próximo: publicar el merge verificado por fast-forward, retirar solo el checkpoint ya integrado y conservar ramas de deployment.

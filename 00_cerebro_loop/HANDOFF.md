@@ -8,3 +8,9 @@
 - La cola del proyecto está completa. El censo de issues sigue bloqueado por falta de autenticación de GitHub (`gh auth status`: sin sesión).
 - Las ramas remotas de checkpoint y deployment se conservaron; no se eliminó trabajo no inspeccionado.
 - Próximo: esperar nueva solicitud y seguir `AGENTS.md` al reanudar.
+
+## Boot posterior — 2026-11-08
+- Se integró `origin/opencode-checkpoints/5` (`88de66e`) sin conflictos mediante merge; el diff efectivo incorporó únicamente metadatos de checkpoint/conversación.
+- La app pasó `node --check app.js`, `git diff --check`, respuesta HTTP 200 y Playwright sin errores de consola (una advertencia externa).
+- Se preservan las reglas de `AGENTS.md` para no eliminar ramas sin verificar su trabajo ni resolver conflictos de forma autónoma.
+- Próximo: publicar el merge verificado por fast-forward, retirar solo el checkpoint ya integrado y conservar ramas de deployment.
