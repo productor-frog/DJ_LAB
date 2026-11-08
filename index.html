@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a0c12">
+  <meta name="description" content="Aprende a mezclar con dos decks, una cabina interactiva y audio local.">
+  <title>De Cero a Leyenda — DJ Lab</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="DJ Lab inicio"><span class="brand-mark">◉</span><span>DJ<span class="brand-accent">LAB</span><small>DE CERO A LEYENDA</small></span></a>
+      <div class="session-pill"><span class="live-dot"></span><span id="audio-status">CABINA LISTA</span></div>
+      <div class="top-actions"><button class="quiet-button" id="midi-button" type="button">⌁ MIDI <span id="midi-state">OFF</span></button><button class="avatar" type="button" aria-label="Perfil">DJ</button></div>
+    </header>
+
+    <main id="top">
+      <section class="intro-row">
+        <div><p class="eyebrow">PRÁCTICA DE HOY <span>•</span> NIVEL 01</p><h1>Tu primera <em>mezcla.</em></h1><p class="intro-copy">Dos decks, un oído atento y el primer paso para tomar el control.</p></div>
+        <div class="lesson-progress"><span>LECCIÓN 01 / 04</span><div class="progress-track"><i></i></div><b>25%</b></div>
+      </section>
+
+      <section class="wave-stack" aria-label="Formas de onda de los decks">
+        <div class="wave-label wave-a"><span class="channel-dot"></span> DECK A <small id="wave-title-a">CARGA UNA PISTA</small><span class="wave-time" id="time-a">00:00</span></div>
+        <canvas id="wave-a" width="1200" height="94" aria-label="Visualización de audio Deck A"></canvas>
+        <div class="wave-divider"><span id="beat-readout">ESPERANDO BEAT</span><div class="beat-lights"><i></i><i></i><i></i><i></i></div><span id="phase-readout">FASE —</span></div>
+        <canvas id="wave-b" width="1200" height="94" aria-label="Visualización de audio Deck B"></canvas>
+        <div class="wave-label wave-b"><span class="channel-dot"></span> DECK B <small id="wave-title-b">CARGA UNA PISTA</small><span class="wave-time" id="time-b">00:00</span></div>
+      </section>
+
+      <section class="mixer-layout" aria-label="Consola de mezcla">
+        <article class="deck deck-a" data-deck="a">
+          <div class="deck-heading"><span class="deck-index">A</span><div><h2>DECK A</h2><p>CANAL IZQUIERDO</p></div><span class="deck-led"></span></div>
+          <div class="track-card"><div class="record-art art-a"><span>♪</span></div><div class="track-info"><strong id="track-a">Sin pista cargada</strong><span id="artist-a">Importa audio o inicia la demo</span></div><button class="icon-button cue-button" data-action="cue" data-deck="a" aria-label="Cue Deck A">CUE</button></div>
+          <div class="tempo-row"><span>BPM</span><strong id="bpm-read-a">120.0</strong><span class="key-chip">—</span><span class="tempo-change" id="pitch-read-a">±0.0%</span></div>
+          <div class="transport-row"><button class="transport play-button" data-action="play" data-deck="a" aria-label="Reproducir Deck A">▶</button><button class="transport secondary" data-action="sync" data-deck="a">SYNC</button><button class="demo-button" data-action="demo" data-deck="a">▶ DEMO</button><label class="load-button">＋ CARGAR<input type="file" accept="audio/*" data-load="a" aria-label="Cargar audio para Deck A"></label></div>
+          <div class="deck-controls">
+            <div class="eq-block"><div class="control-title">EQ · 3 BANDAS</div><div class="knob-row">
+              <label class="knob-control"><input type="range" min="-24" max="6" value="0" data-eq="low" data-deck="a"><span class="knob"><i></i></span><b>LOW</b><small>0 dB</small></label>
+              <label class="knob-control"><input type="range" min="-24" max="6" value="0" data-eq="mid" data-deck="a"><span class="knob"><i></i></span><b>MID</b><small>0 dB</small></label>
+              <label class="knob-control"><input type="range" min="-24" max="6" value="0" data-eq="high" data-deck="a"><span class="knob"><i></i></span><b>HIGH</b><small>0 dB</small></label>
+            </div></div>
+            <div class="slider-block"><label>CHANNEL<small id="volume-label-a">82%</small><input type="range" min="0" max="100" value="82" data-volume="a" aria-label="Volumen Deck A"></label><label>PITCH<small id="pitch-label-a">0.0%</small><input type="range" min="-8" max="8" step="0.1" value="0" data-pitch="a" aria-label="Pitch Deck A"></label></div>
+          </div>
+          <audio id="audio-a" preload="metadata"></audio>
+        </article>
+
+        <section class="center-mixer">
+          <div class="mixer-top"><span>MASTER</span><div class="master-meter"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><strong>-06 <small>dB</small></strong></div>
+          <div class="lesson-card"><div class="lesson-icon">✦</div><div class="lesson-copy"><span class="eyebrow">MISIÓN ACTIVA</span><strong>Beatmatch básico</strong><p>Ajusta el Deck B a <b>120 BPM</b> y alinea su primer beat.</p></div><span class="lesson-level">01</span></div>
+          <div class="score-card" id="score-card" aria-live="polite"><span class="score-icon">◎</span><div><strong id="score-title">LISTA PARA MEZCLAR</strong><small id="score-message">Carga dos pistas o inicia las demos</small></div><span class="score-value" id="score-value">—</span></div>
+          <div class="crossfader-block"><div class="cross-label"><span>A</span><b>CROSSFADER</b><span>B</span></div><input id="crossfader" type="range" min="0" max="100" value="50" aria-label="Crossfader"><div class="cross-markers"><span>A</span><i></i><i></i><i></i><span>B</span></div></div>
+          <button class="check-button" id="check-beat" type="button"><span>COMPROBAR MEZCLA</span><span>↗</span></button>
+          <p class="privacy-note">♪ Audio local · Tus archivos no se suben</p>
+        </section>
+
+        <article class="deck deck-b" data-deck="b">
+          <div class="deck-heading"><span class="deck-index">B</span><div><h2>DECK B</h2><p>CANAL DERECHO</p></div><span class="deck-led"></span></div>
+          <div class="track-card"><div class="record-art art-b"><span>♫</span></div><div class="track-info"><strong id="track-b">Sin pista cargada</strong><span id="artist-b">Importa audio o inicia la demo</span></div><button class="icon-button cue-button" data-action="cue" data-deck="b" aria-label="Cue Deck B">CUE</button></div>
+          <div class="tempo-row"><span>BPM</span><strong id="bpm-read-b">124.0</strong><span class="key-chip">—</span><span class="tempo-change" id="pitch-read-b">±0.0%</span></div>
+          <div class="transport-row"><button class="transport play-button" data-action="play" data-deck="b" aria-label="Reproducir Deck B">▶</button><button class="transport secondary" data-action="sync" data-deck="b">SYNC</button><button class="demo-button" data-action="demo" data-deck="b">▶ DEMO</button><label class="load-button">＋ CARGAR<input type="file" accept="audio/*" data-load="b" aria-label="Cargar audio para Deck B"></label></div>
+          <div class="deck-controls">
+            <div class="eq-block"><div class="control-title">EQ · 3 BANDAS</div><div class="knob-row">
+              <label class="knob-control"><input type="range" min="-24" max="6" value="0" data-eq="low" data-deck="b"><span class="knob"><i></i></span><b>LOW</b><small>0 dB</small></label>
+              <label class="knob-control"><input type="range" min="-24" max="6" value="0" data-eq="mid" data-deck="b"><span class="knob"><i></i></span><b>MID</b><small>0 dB</small></label>
+              <label class="knob-control"><input type="range" min="-24" max="6" value="0" data-eq="high" data-deck="b"><span class="knob"><i></i></span><b>HIGH</b><small>0 dB</small></label>
+            </div></div>
+            <div class="slider-block"><label>CHANNEL<small id="volume-label-b">82%</small><input type="range" min="0" max="100" value="82" data-volume="b" aria-label="Volumen Deck B"></label><label>PITCH<small id="pitch-label-b">0.0%</small><input type="range" min="-8" max="8" step="0.1" value="0" data-pitch="b" aria-label="Pitch Deck B"></label></div>
+          </div>
+          <audio id="audio-b" preload="metadata"></audio>
+        </article>
+      </section>
+
+      <section class="library-section">
+        <div class="library-heading"><div><p class="eyebrow">TU COLECCIÓN</p><h2>Biblioteca <em>local</em></h2></div><div class="library-actions"><span id="library-count">0 pistas</span><button class="quiet-button" id="export-library" type="button">↧ EXPORTAR</button></div></div>
+        <div class="library-table-wrap"><table><thead><tr><th>PISTA</th><th>DURACIÓN</th><th>BPM</th><th>FUENTE</th><th>ACCIÓN</th></tr></thead><tbody id="library-body"><tr class="empty-row"><td colspan="5"><span>♫</span><strong>Tu biblioteca empieza acá</strong><small>Inicia una demo o carga archivos de audio desde tu dispositivo.</small></td></tr></tbody></table></div>
+        <p class="library-footnote"><span>◉</span> Biblioteca guardada solo en este dispositivo. Los archivos de audio no se copian ni se cargan.</p>
+      </section>
+    </main>
+    <footer><span>DJ LAB <i>•</i> DE CERO A LEYENDA</span><span>APRENDE · ESCUCHA · MEZCLA</span></footer>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="app.js" defer></script>
+</body>
+</html>
