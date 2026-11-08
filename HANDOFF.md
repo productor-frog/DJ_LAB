@@ -24,10 +24,9 @@
 - `screenshots/baseline.jpg` es la captura compacta actualizada (ignorada por Git).
 
 ## Cierre y siguiente paso
-- La instalación inicial del SOP está en `AGENTS.md`; `Agents.md` original se conserva sin cambios. `save-000` apunta al baseline verificado `548f76d`.
-- La tarea YouTube pasó sintaxis, revisión de diff y prueba visual/interactiva; consola con cero errores y una advertencia externa de `postMessage` documentada arriba.
-- Forensis del checkpoint previo: el último checkpoint publicado implementó las instrucciones del SOP y actualizó handoff/solicitud; no había código de aplicación huérfano ni rescate pendiente.
-- Censo de issues bloqueado: `gh auth status` informa que no hay sesión de GitHub, por lo que no se pudieron listar ni mantener issues.
-- Las solicitudes registradas en `user-requests.md`, incluida la reproducción directa de YouTube por deck, están completadas. El checkpoint funcional `fa2ee7a` se publicó por fast-forward en `origin/main`.
-- Forensis de `origin/opencode-checkpoints/3` (seis commits únicos): su árbol coincide con `origin/main` fuera de `.omgithub/checkpoint.json` y `.omgithub/conversation.json`; no contiene cambios pendientes de app o documentación. No se absorbió ni eliminó: se conserva intacta como checkpoint histórico porque esos metadatos/conversación son opacos y el censo remoto sigue bloqueado por falta de autenticación.
-- Próximo paso: continuar con «Seguí el SOP en AGENTS.md»; autenticar GitHub antes del siguiente censo/sepultura de issues.
+- La instalación inicial del SOP está en `AGENTS.md`; `Agents.md` original se conserva sin cambios. Los tags `save-000` y `save-002` no se modificaron.
+- Boot del 2026-11-08: leídos los cinco archivos de `00_cerebro_loop/`; `origin/opencode-checkpoints/4` se integró por fast-forward (solo metadatos de checkpoint) y luego se eliminó del remoto. No había ramas `opencode-resume/*` ni conflictos; `origin/main` ya estaba integrado.
+- La app se sirvió en `http://127.0.0.1:3002/`, se cargó completa en Chromium y se probaron demos simultáneas en A y B: ambas aparecieron en la biblioteca. Cero errores de consola; `node --check app.js` y `git diff --check` pasan.
+- La captura compacta de revisión está en `/tmp/opencode/dj-lab.jpg` (no se versiona).
+- Se publicó el checkpoint de esta sesión a `main` por fast-forward y se creó el tag `save-003` tras la verificación. No se reescribieron tags preexistentes.
+- Próximo paso: continuar con «Seguí el SOP en AGENTS.md». El censo de issues sigue pendiente de autenticación (`gh auth status`: sin sesión).
