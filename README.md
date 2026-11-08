@@ -39,6 +39,7 @@ Open <http://localhost:3002>.
 - Adjust each deck's three-band EQ, channel volume, and pitch. Use **SYNC** to match tempo/position, **CUE** to return to the start, and the center crossfader to balance decks.
 - Press **COMPROBAR MEZCLA** for the introductory beatmatch feedback. The MIDI button offers optional WebMIDI support where the browser and device allow it.
 - Demo/local track metadata is kept in browser storage. **EXPORTAR** downloads that metadata as JSON; audio files themselves are not copied, and locally selected files must be selected again after a reload.
-- The shared playlist is embedded for playback in DJ Lab. If YouTube does not allow embedding a track, open the playlist in YouTube Music. Playlist playback is separate from the DJ decks; to mix a track, load an audio file from your device.
+- **MEZCLA TU PLAYLIST AQUÍ** lets you add multiple audio files from your device, then load each one into Deck A or Deck B. The file queue is temporary for the current browser session; selected files are not uploaded and must be added again after a reload.
+- The YouTube Music playlist remains available in its embedded player and via **ABRIR EN YOUTUBE MUSIC**, but its stream is separate from the DJ decks and cannot be routed into the mixer. To mix a song in DJ Lab, use an audio file you have available on your device. If YouTube does not allow embedding a track, open the playlist in YouTube Music.
 
 The current lesson is a first playable baseline. Detailed FFT/BPM analysis, expanded rhythm scoring and MIDI mapping, plus JSON import are deferred in `todo.md`.

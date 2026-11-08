@@ -6,6 +6,7 @@
   const STORAGE_KEY = 'djlab-library-v1';
   const TARGET_BPM = 120;
   const decks = {};
+  const mixPlaylist = [];
   let audioContext;
   let crossPosition = 0.5;
   let toastTimer;
@@ -382,6 +383,45 @@
     toast(`Audio local cargado en Deck ${id.toUpperCase()}`);
   }
 
+  function addPlaylistFiles(files) {
+    const audioFiles = [...files].filter(file => file.type.startsWith('audio/'));
+    if (!audioFiles.length) { toast('Elige uno o más archivos de audio compatibles.'); return; }
+    mixPlaylist.push(...audioFiles);
+    renderMixPlaylist();
+    toast(`${audioFiles.length} ${audioFiles.length === 1 ? 'pista añadida' : 'pistas añadidas'} a tu playlist`);
+  }
+
+  function renderMixPlaylist() {
+    const list = $('#mix-playlist');
+    if (!mixPlaylist.length) {
+      const empty = document.createElement('li');
+      empty.className = 'playlist-empty';
+      empty.textContent = 'Aún no hay pistas. Añade archivos de audio para empezar a mezclar.';
+      list.replaceChildren(empty);
+      return;
+    }
+    list.replaceChildren(...mixPlaylist.map((file, index) => {
+      const item = document.createElement('li');
+      item.className = 'mix-playlist-item';
+      const name = document.createElement('span');
+      name.className = 'mix-playlist-name';
+      name.textContent = file.name;
+      const actions = document.createElement('span');
+      actions.className = 'mix-playlist-actions';
+      for (const id of ['a', 'b']) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'table-load';
+        button.textContent = id.toUpperCase();
+        button.setAttribute('aria-label', `Cargar ${file.name} en Deck ${id.toUpperCase()}`);
+        button.addEventListener('click', () => loadLocalFile(file, id));
+        actions.append(button);
+      }
+      item.append(name, actions);
+      return item;
+    }));
+  }
+
   async function enableMidi() {
     if (!navigator.requestMIDIAccess) { toast('WebMIDI no está disponible en este navegador.'); return; }
     try {
@@ -458,6 +498,10 @@
   $$('.cue-button').forEach(button => button.addEventListener('click', () => cueDeck(button.dataset.deck)));
   $$('[data-action="sync"]').forEach(button => button.addEventListener('click', () => syncDeck(button.dataset.deck)));
   $$('[data-load]').forEach(input => input.addEventListener('change', () => { if (input.files?.[0]) loadLocalFile(input.files[0], input.dataset.load); input.value = ''; }));
+  $('#playlist-files').addEventListener('change', event => {
+    addPlaylistFiles(event.target.files || []);
+    event.target.value = '';
+  });
   $$('[data-eq]').forEach(input => input.addEventListener('input', () => {
     ensureAudio(); const deck = decks[input.dataset.deck]; deck.filters[input.dataset.eq].gain.setTargetAtTime(Number(input.value), audioContext.currentTime, 0.02);
     const label = input.closest('.knob-control'); label.querySelector('small').textContent = `${Number(input.value) > 0 ? '+' : ''}${input.value} dB`;
