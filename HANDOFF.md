@@ -2,7 +2,7 @@
 
 ## Estado
 - DJ Lab es una app estática de HTML/CSS/JavaScript, sin backend ni dependencias de framework.
-- Último checkpoint: `548f76d` (`Add local audio analysis, MIDI mapping, and library import`), ya publicado en `origin/main`; árbol limpio antes de esta tarea de SOP.
+- Último checkpoint: `6312cca` (`chore(process): install SOP and close handoff`), ya publicado en `origin/main`; árbol limpio al cierre.
 - El audio del mixer se limita a demos generadas localmente y archivos que el usuario elige en su dispositivo. No se extrae, analiza ni enruta audio de YouTube.
 - La playlist de YouTube sigue separada en su reproductor incrustado; su API oficial expone IDs y títulos, y los botones A/B abren un selector de archivo local.
 
@@ -25,6 +25,6 @@
 - La instalación inicial del SOP está en `AGENTS.md`; `Agents.md` original se conserva sin cambios. `save-000` apunta al baseline verificado `548f76d`.
 - Gate baseline aprobado: `node --check app.js`, `git diff --check`, servidor HTTP local y `playwright-cli console error` (sin errores/advertencias); Chromium cargó la interfaz DJ Lab.
 - Forensis del último checkpoint: el diff rescatado en `main` implementa análisis/BPM, beatmatch, MIDI y JSON validado; HANDOFF decía erróneamente pendiente de commit. No queda código de aplicación huérfano.
-- Censo de issues bloqueado: `gh auth status` no está autenticado y GH_TOKEN falta; no se pudieron listar ni mantener issues. Checkpoint de issue #3 contiene solo metadatos de conversación, sin código que compostar.
+- Censo de issues bloqueado: `gh auth status` no está autenticado y GH_TOKEN falta; no se pudieron listar ni mantener issues. Forensis del checkpoint de issue #3: instaló SOP y actualizó handoff/solicitud; no hay código de aplicación huérfano ni rescate pendiente.
 - La solicitud detallada de `user-requests.md` ya está completada por el checkpoint `548f76d`.
 - Próximo paso: continuar con «Seguí el SOP en AGENTS.md»; autenticar GitHub antes de solicitar censo/sepultura de issues.
