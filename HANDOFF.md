@@ -59,5 +59,6 @@
 - Se recuperó el cerebro existente en `00_cerebro_loop/`; se leyeron HANDOFF, ROADMAP, TODO, USER_REQUESTS y CEMETERY. `PROTOCOL.md` no existe; no se creó porque el protocolo del usuario condicionaba su creación a que faltara la carpeta completa.
 - `origin/opencode-checkpoints/6` se inspeccionó: contiene solo metadatos de checkpoint/conversación y los mismos apuntes de consola que ya están en `main`; no se mezcló ni reconstruyó trabajo duplicado, y la rama se conservó.
 - Verificación de base en `http://127.0.0.1:3002/`: HTTP 200, Playwright sin errores (una advertencia externa). `node --check app.js` y `git diff --check` pasan.
+- Captura de revisión verificada visualmente: `/tmp/opencode/dj-lab-birth.jpg`, JPEG 1280×900, 78 KB (no versionada).
 - El censo de issues continúa bloqueado: `gh auth status` no encuentra una sesión autenticada.
 - Próximo: esperar nueva solicitud y seguir `AGENTS.md` al reanudar.
