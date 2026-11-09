@@ -6,7 +6,7 @@
 - [x] Análisis FFT por bandas y BPM, evaluación de beatmatch por tempo/fase, coaching direccional de pitch/jog y MIDI learn para audio demo/local.
 - [x] Biblioteca de metadatos con importación/exportación JSON validada, sin incluir archivos de audio.
 - [x] Selección y reproducción independiente de temas en los decks mediante los reproductores oficiales de YouTube; el audio de YouTube no entra al mixer ni se analiza.
-- [ ] Mezclas automáticas educativas: guiar una transición entre archivos locales autorizados, explicar los ajustes y permitir que el usuario practique cada paso. Criterio de éxito: la guía funciona con audio local seleccionado por el usuario y nunca descarga, analiza ni enruta audio de YouTube.
+- [x] Guía educativa de transición en cuatro pasos: carga demo/local opcional, beatmatch comprobable, reproducción de ambos decks y crossfade A→B; YouTube queda explícitamente fuera del tutorial y del mixer. Recorrido completo verificado en Chromium con demos; beatmatch GOOD, ambos decks reproduciendo y crossfade completado. Sin errores de consola ni errores de página. Capturas: `/tmp/opencode/dj-lab-transition-guide.jpg` (interfaz inicial), `/tmp/opencode/dj-lab-guide-loaded.png` (demos cargadas) y `/tmp/opencode/dj-lab-transition-complete.png` (guía completada).
 - [~] Gauntlet visual/funcional frente a VirtualDJ: progreso y evidencia en `GAUNTLET_PROGRESS.md`. La primera pareja de capturas (1280×900) no es comparable: muestra la cabina de DJ Lab y la web promocional de VirtualDJ; crítico independiente no declara ganador. Criterio de éxito: comparar las interfaces reales en estados/tarea equivalentes, con revisión a ciegas, y continuar iterando hasta que DJ Lab gane.
 
 ## 🛠️ Deuda Técnica y Mantenimiento (Tareas [C])

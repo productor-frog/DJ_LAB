@@ -52,7 +52,16 @@
 
         <section class="center-mixer">
           <div class="mixer-top"><span>MASTER</span><div class="master-meter"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><strong>-06 <small>dB</small></strong></div>
-          <div class="lesson-card"><div class="lesson-icon">✦</div><div class="lesson-copy"><span class="eyebrow">MISIÓN ACTIVA</span><strong>Beatmatch básico</strong><p>Ajusta el Deck B a <b>120 BPM</b> y alinea su primer beat.</p></div><span class="lesson-level">01</span></div>
+          <section class="transition-guide" aria-labelledby="guide-title">
+            <div class="guide-heading"><span class="lesson-icon">✦</span><div><span class="eyebrow">GUÍA PRÁCTICA · AUDIO LOCAL</span><h2 id="guide-title">Tu primera transición</h2></div></div>
+            <div class="guide-progress" aria-label="Progreso de la guía"><i id="guide-progress-bar"></i></div>
+            <span class="guide-step-count" id="guide-step-count">4 pasos · a tu ritmo</span>
+            <strong class="guide-step-title" id="guide-step-title">Prepara los dos decks</strong>
+            <p class="guide-instruction" id="guide-instruction">Carga una demo o un archivo de audio elegido por ti en cada deck. YouTube queda separado y no participa en esta guía.</p>
+            <div class="guide-action-row" id="guide-action-row"><button class="quiet-button" id="guide-sync" type="button" hidden>SYNC B</button><button class="quiet-button" id="guide-check" type="button" hidden>REVISAR BEATMATCH</button><button class="quiet-button" id="guide-play-a" type="button" hidden>▶ DECK A</button><button class="quiet-button" id="guide-play-b" type="button" hidden>▶ DECK B</button></div>
+            <div class="guide-buttons"><button class="quiet-button" id="guide-demo" type="button">PROBAR CON DEMOS</button><button class="quiet-button" id="guide-prev" type="button" hidden>← ATRÁS</button><button class="check-button guide-next" id="guide-next" type="button"><span>EMPEZAR GUÍA</span><span>↗</span></button></div>
+            <p class="guide-feedback" id="guide-feedback" role="status" aria-live="polite">Las demos son opcionales: también puedes usar tus propios archivos locales.</p>
+          </section>
           <div class="score-card" id="score-card" aria-live="polite"><span class="score-icon">◎</span><div><strong id="score-title">LISTA PARA MEZCLAR</strong><small id="score-message">Carga dos pistas o inicia las demos</small></div><span class="score-value" id="score-value">—</span></div>
           <div class="crossfader-block"><div class="cross-label"><span>A</span><b>CROSSFADER</b><span>B</span></div><input id="crossfader" type="range" min="0" max="100" value="50" aria-label="Crossfader"><div class="cross-markers"><span>A</span><i></i><i></i><i></i><span>B</span></div></div>
           <button class="check-button" id="check-beat" type="button"><span>COMPROBAR MEZCLA</span><span>↗</span></button>

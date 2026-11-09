@@ -23,6 +23,9 @@
   let midiLearnEnabled = false;
   let midiLearnTarget = null;
   let lastJogValue = new Map();
+  let guideStep = -1;
+  let guideComplete = false;
+  let guideBeatmatched = false;
   const midiMap = loadMidiMap();
   const library = loadSavedLibrary();
   const midiButtonStates = new Map();
@@ -133,6 +136,47 @@
     updatePhase();
   }
 
+  const guideSteps = [
+    { title: 'Prepara los dos decks', instruction: 'Carga una demo o un archivo de audio elegido por ti en cada deck. YouTube queda separado y no participa en esta guía.' },
+    { title: 'Iguala el tempo', instruction: 'Usa SYNC B para acercar el tempo de Deck B al de A y revisa el beatmatch. Después puedes afinarlo con PITCH y JOG.' },
+    { title: 'Pon las pistas en marcha', instruction: 'Reproduce Deck A y Deck B. Escucha cómo conviven antes de mover el crossfader.' },
+    { title: 'Haz la transición', instruction: 'Desplaza el crossfader gradualmente de A hacia B mientras ambas pistas siguen sonando.' }
+  ];
+
+  function updateTransitionGuide() {
+    if (guideStep < 0 || guideComplete) return;
+    const ready = decks.a?.audio.src && decks.b?.audio.src;
+    const bothPlaying = ready && !decks.a.audio.paused && !decks.b.audio.paused;
+    const canAdvance = guideStep === 0 ? ready : guideStep === 1 ? guideBeatmatched : guideStep === 2 ? bothPlaying : bothPlaying && crossPosition >= 0.8;
+    $('#guide-next').disabled = !canAdvance;
+    $('#guide-feedback').textContent = guideStep === 0
+      ? (ready ? '¡Listo! Los dos decks tienen audio demo/local. Continúa cuando quieras.' : 'Carga una pista demo o un archivo local en cada deck para continuar.')
+      : guideStep === 1
+        ? (guideBeatmatched ? 'Beatmatch conseguido. Continúa al siguiente paso.' : ready ? 'Ajusta Deck B con SYNC y revisa el resultado.' : 'Primero carga audio demo/local en ambos decks.')
+        : guideStep === 2
+          ? (bothPlaying ? 'Los dos decks están sonando. Ya puedes pasar a la transición.' : 'Reproduce ambos decks con los controles de abajo.')
+          : (canAdvance ? 'Transición completada. ¡Buen trabajo!' : !bothPlaying ? 'Mantén ambas pistas en reproducción y lleva el crossfader hacia B.' : 'Mueve el crossfader hacia B para completar la transición.');
+  }
+
+  function renderTransitionGuide() {
+    const active = guideStep >= 0;
+    const step = guideSteps[guideStep];
+    $('#guide-step-count').textContent = guideComplete ? 'GUÍA COMPLETADA' : active ? `PASO ${guideStep + 1} DE 4` : '4 pasos · a tu ritmo';
+    $('#guide-step-title').textContent = guideComplete ? '¡Tu primera transición!' : step?.title || 'Prepara los dos decks';
+    $('#guide-instruction').textContent = guideComplete ? 'Has practicado preparación, beatmatch, reproducción y crossfade usando únicamente audio demo/local.' : step?.instruction || guideSteps[0].instruction;
+    $('#guide-progress-bar').style.width = `${guideComplete ? 100 : active ? guideStep / guideSteps.length * 100 : 0}%`;
+    $('#guide-prev').hidden = !active || guideComplete || guideStep === 0;
+    $('#guide-demo').hidden = guideComplete;
+    $('#guide-next').querySelector('span').textContent = guideComplete ? 'REINICIAR GUÍA' : !active ? 'EMPEZAR GUÍA' : guideStep === guideSteps.length - 1 ? 'FINALIZAR' : 'SIGUIENTE';
+    $('#guide-next').disabled = active && !guideComplete;
+    $('#guide-next').classList.toggle('is-complete', guideComplete);
+    $('#guide-sync').hidden = !active || guideStep !== 1;
+    $('#guide-check').hidden = !active || guideStep !== 1;
+    $('#guide-play-a').hidden = !active || guideStep !== 2;
+    $('#guide-play-b').hidden = !active || guideStep !== 2;
+    if (active && !guideComplete) updateTransitionGuide();
+  }
+
   function attachTrack(id, url, details) {
     ensureAudio();
     const deck = decks[id];
@@ -161,6 +205,7 @@
     $(`#analysis-status-${id}`).textContent = deck.demo ? `DEMO · ${deck.estimatedBpm.toFixed(1)} BPM` : 'LOCAL · BPM POR ESTIMAR';
     addToLibrary({ ...details, name: deck.trackName, bpm: deck.baseBpm, source: details.demo ? 'Demo' : 'Local' });
     updateTransport(id);
+    updateTransitionGuide();
   }
 
   function addToLibrary(track) {
@@ -262,6 +307,7 @@
     deck.pitch = Math.max(-8, Math.min(8, (target / deck.baseBpm - 1) * 100));
     $(`[data-pitch="${id}"]`).value = deck.pitch;
     setPitch(id, deck.pitch);
+    if (id === 'b') guideBeatmatched = false;
     if (decks.a.audio.src && decks.b.audio.src) {
       const master = decks.a.audio.currentTime || 0;
       deck.audio.currentTime = master;
@@ -463,7 +509,7 @@
     const card = $('#score-card');
     if (!a.audio.src || !b.audio.src) {
       card.className = 'score-card bad'; $('#score-title').textContent = 'FALTAN PISTAS';
-      $('#score-message').textContent = 'Carga o inicia las demos en ambos decks.'; $('#score-value').textContent = '—'; return;
+      $('#score-message').textContent = 'Carga o inicia las demos en ambos decks.'; $('#score-value').textContent = '—'; return 'MISSING';
     }
     const bpmDifference = Math.abs(a.bpm - b.bpm);
     const phaseOffset = measurePhaseOffset(a, b);
@@ -483,6 +529,7 @@
     $('#score-message').textContent = message;
     $('#score-value').textContent = `${Math.round(phaseDifference)} ms · ${bpmDifference.toFixed(1)} BPM`;
     $('#phase-readout').textContent = `FASE ${Math.round(phaseDifference)} MS`;
+    return result;
   }
 
   function setStatus(text) { $('#audio-status').textContent = text; }
@@ -871,8 +918,25 @@
   }));
   $$('[data-volume]').forEach(input => input.addEventListener('input', () => setVolume(input.dataset.volume, Number(input.value) / 100)));
   $$('[data-pitch]').forEach(input => input.addEventListener('input', () => { ensureAudio(); setPitch(input.dataset.pitch, input.value); }));
-  $('#crossfader').addEventListener('input', event => { ensureAudio(); setCrossfader(event.target.value); });
+  $('#crossfader').addEventListener('input', event => { ensureAudio(); setCrossfader(event.target.value); updateTransitionGuide(); });
   $('#check-beat').addEventListener('click', checkMix);
+  $('#guide-demo').addEventListener('click', () => { startDemo('a'); startDemo('b'); updateTransitionGuide(); });
+  $('#guide-next').addEventListener('click', () => {
+    if (guideComplete) { guideStep = -1; guideComplete = false; guideBeatmatched = false; $('#guide-feedback').textContent = 'Las demos son opcionales: también puedes usar tus propios archivos locales.'; renderTransitionGuide(); return; }
+    if (guideStep < 0) guideStep = 0;
+    else if (guideStep < guideSteps.length - 1) guideStep++;
+    else { guideComplete = true; }
+    renderTransitionGuide();
+  });
+  $('#guide-prev').addEventListener('click', () => { guideStep = Math.max(0, guideStep - 1); renderTransitionGuide(); });
+  $('#guide-sync').addEventListener('click', () => syncDeck('b'));
+  $('#guide-check').addEventListener('click', () => {
+    const result = checkMix();
+    guideBeatmatched = result === 'PERFECT' || result === 'GOOD';
+    updateTransitionGuide();
+  });
+  $('#guide-play-a').addEventListener('click', () => playDeck('a'));
+  $('#guide-play-b').addEventListener('click', () => playDeck('b'));
   $('#midi-button').addEventListener('click', enableMidi);
   $('#midi-target-select').addEventListener('change', () => { midiLearnEnabled = false; updateMidiLearnStatus(); });
   $('#midi-learn-toggle').addEventListener('click', () => {
@@ -897,11 +961,12 @@
     toast('Biblioteca exportada en JSON.');
   });
   for (const id of ['a', 'b']) {
-    $(`#audio-${id}`).addEventListener('play', () => updateTransport(id));
-    $(`#audio-${id}`).addEventListener('pause', () => updateTransport(id));
-    $(`#audio-${id}`).addEventListener('ended', () => updateTransport(id));
+    $(`#audio-${id}`).addEventListener('play', () => { updateTransport(id); updateTransitionGuide(); });
+    $(`#audio-${id}`).addEventListener('pause', () => { updateTransport(id); updateTransitionGuide(); });
+    $(`#audio-${id}`).addEventListener('ended', () => { updateTransport(id); updateTransitionGuide(); });
   }
   renderLibrary();
+  renderTransitionGuide();
   initYouTubePlayer();
   setCrossfader(50);
   requestAnimationFrame(animate);
