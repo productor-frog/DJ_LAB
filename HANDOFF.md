@@ -18,7 +18,7 @@
 ## Verificación
 - `node --check app.js` y `git diff --check` pasan.
 - Chromium en `http://localhost:3002`: los dos iframes oficiales por deck mantienen proporción 16:9 (359×202 px); al seleccionar pistas distintas, los estados de A/B se actualizaron de forma independiente. Una pista de prueba no permitió incrustación y mostró el aviso esperado para abrirla en YouTube Music.
-- `playwright-cli console error`: cero errores. Queda una advertencia de `postMessage` emitida por `www-widgetapi.vflset/www-widgetapi.js`: target `youtube-nocookie.com` frente al origen local `http://localhost:3002`; parece externa al código de la app y no impidió inicializar ni controlar los reproductores.
+- Investigación de consola (2026-11-09): cero errores; las advertencias observadas proceden de `www-widgetapi.vflset/www-widgetapi.js` (YouTube): `web-share` no reconocido y `postMessage` con target de YouTube frente al origen local. Su número varía con la carga de los iframes; no se encontró un error propio de la app ni una corrección segura del lado del cliente.
 - Verificación final de esta tarea: `node --check app.js`, `git diff --check` y revisión del diff.
 - Verificaciones previas conservadas: Chromium mostró BPM/bandas/beatmatch, WebMIDI simulado aprendió CC 22 canal 3 y la importación/exportación JSON validó metadatos sin incluir audio.
 - `screenshots/baseline.jpg` es la captura compacta actualizada (ignorada por Git).
