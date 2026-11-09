@@ -1,0 +1,13 @@
+{
+  "name": "dj-lab",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Browser-only DJ practice console",
+  "scripts": {
+    "test": "playwright test",
+    "test:smoke": "playwright test tests/smoke.spec.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.0"
+  }
+}

@@ -11,7 +11,7 @@
 
 ## 🛠️ Deuda Técnica y Mantenimiento (Tareas [C])
 - [x] Conservar el prompt reutilizable del Gauntlet Loop adaptado a DJ Lab, VirtualDJ y las reglas de AGENTS.md en `GAUNTLET_LOOP_PROMPT.md`.
-- [ ] Añadir una prueba automatizada de humo en navegador para carga, decks y consola; hoy no hay un comando de build/test configurado.
+- [x] Añadir prueba automatizada de humo en Chromium con Playwright: verifica carga, visibilidad de ambos decks, reproducción de demos y errores de página/consola propios; `npm test` pasa (1 prueba). Los mensajes de consola se adjuntan para revisión y los errores de consola externos se distinguen de los de DJ Lab. Configuración de uso documentada en `README.md`.
 - [ ] Durante el Gauntlet, repetir capturas al mismo viewport y registrar por separado errores propios y advertencias de servicios externos.
 - [x] Investigar las advertencias actuales de la API de YouTube: se documentaron advertencias externas y no se encontraron errores propios reproducibles.
 

@@ -32,6 +32,16 @@ python3 -m http.server 3002
 
 Open <http://localhost:3002>.
 
+### Run the browser smoke test
+
+The Playwright smoke test starts its own local server on port 4173, checks that the mixer and both decks load, starts each generated demo, and fails on uncaught page errors or DJ Lab console errors. Console messages from external services are kept separate from app errors.
+
+```sh
+npm ci
+npx playwright install chromium
+npm test
+```
+
 ### Practice
 
 - Start the generated **DEMO** on either deck to hear a loop without selecting a file.
