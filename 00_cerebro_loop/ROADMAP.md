@@ -7,7 +7,7 @@
 - [x] Biblioteca de metadatos con importación/exportación JSON validada, sin incluir archivos de audio.
 - [x] Selección y reproducción independiente de temas en los decks mediante los reproductores oficiales de YouTube; el audio de YouTube no entra al mixer ni se analiza.
 - [ ] Mezclas automáticas educativas: guiar una transición entre archivos locales autorizados, explicar los ajustes y permitir que el usuario practique cada paso. Criterio de éxito: la guía funciona con audio local seleccionado por el usuario y nunca descarga, analiza ni enruta audio de YouTube.
-- [ ] Gauntlet visual/funcional frente a VirtualDJ: comparar capturas reales de ambos productos al mismo viewport y mantener una página de progreso con brechas, cambios y veredictos críticos. Criterio de éxito: cada pieza se revisa a ciegas por un crítico independiente y el trabajo itera hasta que DJ Lab gane esa comparación.
+- [~] Gauntlet visual/funcional frente a VirtualDJ: progreso y evidencia en `GAUNTLET_PROGRESS.md`. La primera pareja de capturas (1280×900) no es comparable: muestra la cabina de DJ Lab y la web promocional de VirtualDJ; crítico independiente no declara ganador. Criterio de éxito: comparar las interfaces reales en estados/tarea equivalentes, con revisión a ciegas, y continuar iterando hasta que DJ Lab gane.
 
 ## 🛠️ Deuda Técnica y Mantenimiento (Tareas [C])
 - [x] Conservar el prompt reutilizable del Gauntlet Loop adaptado a DJ Lab, VirtualDJ y las reglas de AGENTS.md en `GAUNTLET_LOOP_PROMPT.md`.
