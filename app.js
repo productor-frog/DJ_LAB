@@ -114,7 +114,8 @@
 
   function setCrossfader(value) {
     crossPosition = Number(value) / 100;
-    $('#crossfader').value = value;
+    const slider = $('#crossfader');
+    if (slider) slider.value = value;
     if (!audioContext) return;
     // Equal-power curve: constant perceived loudness through the center.
     decks.a.cross.gain.setTargetAtTime(Math.cos(crossPosition * Math.PI / 2), audioContext.currentTime, 0.015);
@@ -123,6 +124,7 @@
 
   function setPitch(id, value) {
     const deck = decks[id];
+    if (!deck) return;
     deck.pitch = Number(value);
     const rate = 1 + deck.pitch / 100;
     deck.audio.playbackRate = rate;
@@ -136,6 +138,7 @@
   function attachTrack(id, url, details) {
     ensureAudio();
     const deck = decks[id];
+    if (!deck) return;
     if (deck.objectUrl && deck.objectUrl.startsWith('blob:')) URL.revokeObjectURL(deck.objectUrl);
     deck.objectUrl = url;
     deck.audio.pause();
@@ -236,7 +239,7 @@
     try {
       ensureAudio();
       const deck = decks[id];
-      if (!deck.audio.src) { toast('Carga una pista o inicia la demo primero.'); return; }
+      if (!deck?.audio?.src) { toast('Carga una pista o inicia la demo primero.'); return; }
       if (deck.audio.paused) await deck.audio.play(); else deck.audio.pause();
       updateTransport(id);
       setStatus(deck.audio.paused ? 'AUDIO PREPARADO' : 'REPRODUCIENDO');
@@ -258,6 +261,7 @@
   function syncDeck(id) {
     ensureAudio();
     const deck = decks[id];
+    if (!deck) return;
     const target = id === 'a' ? decks.b.bpm : decks.a.bpm;
     deck.pitch = Math.max(-8, Math.min(8, (target / deck.baseBpm - 1) * 100));
     $(`[data-pitch="${id}"]`).value = deck.pitch;
@@ -271,7 +275,7 @@
 
   function cueDeck(id) {
     const deck = decks[id];
-    if (!deck?.audio.src) { toast('Carga una pista antes de marcar CUE.'); return; }
+    if (!deck?.audio?.src) { toast('Carga una pista antes de marcar CUE.'); return; }
     deck.audio.pause();
     deck.audio.currentTime = deck.cuePoint;
     updateTransport(id);
@@ -375,6 +379,7 @@
 
   function renderWave(id) {
     const deck = decks[id];
+    if (!deck) return;
     const canvas = $(`#wave-${id}`);
     const ctx = canvas.getContext('2d');
     const width = canvas.clientWidth || 500;
@@ -599,10 +604,10 @@
     }
   }
 
-  function setStatus(text) { $('#audio-status').textContent = text; }
+  function setStatus(text) { const el = $('#audio-status'); if (el) el.textContent = text; }
 
   function toast(message) {
-    const el = $('#toast'); el.textContent = message; el.classList.add('visible');
+    const el = $('#toast'); if (!el) return; el.textContent = message; el.classList.add('visible');
     clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('visible'), 2300);
   }
 
@@ -936,8 +941,11 @@
 
   function setVolume(id, value) {
     ensureAudio();
-    decks[id].volume.gain.setTargetAtTime(Math.max(0, Math.min(1, value)), audioContext.currentTime, 0.015);
-    $(`#volume-label-${id}`).textContent = `${Math.round(value * 100)}%`;
+    const deck = decks[id];
+    if (!deck?.volume) return;
+    deck.volume.gain.setTargetAtTime(Math.max(0, Math.min(1, value)), audioContext.currentTime, 0.015);
+    const label = $(`#volume-label-${id}`);
+    if (label) label.textContent = `${Math.round(value * 100)}%`;
   }
 
   function animate() {
