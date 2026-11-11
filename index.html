@@ -54,6 +54,16 @@
           <div class="mixer-top"><span>MASTER</span><div class="master-meter"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><strong>-06 <small>dB</small></strong></div>
           <div class="lesson-card"><div class="lesson-icon">✦</div><div class="lesson-copy"><span class="eyebrow">MISIÓN ACTIVA</span><strong>Beatmatch básico</strong><p>Ajusta el Deck B a <b>120 BPM</b> y alinea su primer beat.</p></div><span class="lesson-level">01</span></div>
           <div class="score-card" id="score-card" aria-live="polite"><span class="score-icon">◎</span><div><strong id="score-title">LISTA PARA MEZCLAR</strong><small id="score-message">Carga dos pistas o inicia las demos</small></div><span class="score-value" id="score-value">—</span></div>
+          <div class="auto-mix-card" id="auto-mix-card" aria-live="polite">
+            <div class="auto-mix-head"><span class="eyebrow">MEZCLA AUTOMÁTICA GUIADA</span><strong id="auto-mix-step-title">LISTA</strong></div>
+            <p id="auto-mix-description">Carga dos pistas o inicia las demos; la guía usa solo audio local/demo y nunca YouTube.</p>
+            <div class="auto-mix-actions">
+              <button class="check-button auto-mix-primary" id="auto-mix-start" type="button"><span>INICIAR GUÍA</span><span>▶</span></button>
+              <button class="quiet-button" id="auto-mix-next" type="button" disabled>SIGUIENTE PASO</button>
+              <button class="quiet-button" id="auto-mix-stop" type="button" disabled>DETENER</button>
+            </div>
+            <small id="auto-mix-progress">Paso 0 / 5</small>
+          </div>
           <div class="crossfader-block"><div class="cross-label"><span>A</span><b>CROSSFADER</b><span>B</span></div><input id="crossfader" type="range" min="0" max="100" value="50" aria-label="Crossfader"><div class="cross-markers"><span>A</span><i></i><i></i><i></i><span>B</span></div></div>
           <button class="check-button" id="check-beat" type="button"><span>COMPROBAR MEZCLA</span><span>↗</span></button>
           <div class="midi-mapping-row"><span id="midi-learn-status">MIDI · asignación universal</span><select id="midi-target-select" aria-label="Control para aprender MIDI"><option value="play-a">PLAY A</option><option value="play-b">PLAY B</option><option value="cue-a">CUE A</option><option value="cue-b">CUE B</option><option value="sync-a">SYNC A</option><option value="sync-b">SYNC B</option><option value="volume-a">VOLUMEN A</option><option value="volume-b">VOLUMEN B</option><option value="pitch-a">PITCH A</option><option value="pitch-b">PITCH B</option><option value="eq-a-low">LOW A</option><option value="eq-a-mid">MID A</option><option value="eq-a-high">HIGH A</option><option value="eq-b-low">LOW B</option><option value="eq-b-mid">MID B</option><option value="eq-b-high">HIGH B</option><option value="crossfader">CROSSFADER</option><option value="jog-a">JOG A</option><option value="jog-b">JOG B</option></select><button class="quiet-button" id="midi-learn-toggle" type="button">APRENDER CONTROL</button><button class="quiet-button" id="midi-clear-maps" type="button">REINICIAR MAPA</button></div>

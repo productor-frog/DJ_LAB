@@ -485,6 +485,120 @@
     $('#phase-readout').textContent = `FASE ${Math.round(phaseDifference)} MS`;
   }
 
+  const autoMix = { active: false, step: 0, total: 5, timer: null };
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+  function autoMixSetControls(active) {
+    autoMix.active = active;
+    $('#auto-mix-start').disabled = active;
+    $('#auto-mix-next').disabled = !active;
+    $('#auto-mix-stop').disabled = !active;
+  }
+
+  function setAutoMixStatus(title, description, progress) {
+    $('#auto-mix-step-title').textContent = title;
+    $('#auto-mix-description').textContent = description;
+    $('#auto-mix-progress').textContent = progress;
+  }
+
+  function resetAutoMixEq(id) {
+    for (const band of ['low', 'mid', 'high']) {
+      const input = $(`[data-eq="${band}"][data-deck="${id}"]`);
+      if (!input) continue;
+      input.value = 0;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }
+
+  function autoMixSetVolume(id, value) {
+    const input = $(`[data-volume="${id}"]`);
+    if (input) { input.value = String(Math.round(value * 100)); input.dispatchEvent(new Event('input', { bubbles: true })); }
+    setVolume(id, value);
+  }
+
+  function animateAutoMixCrossfade(from, to, duration) {
+    return new Promise(resolve => {
+      const start = performance.now();
+      const tick = now => {
+        if (!autoMix.active) { resolve(); return; }
+        const t = Math.min(1, (now - start) / duration);
+        const eased = t * t * (3 - 2 * t);
+        setCrossfader(Math.round(from + (to - from) * eased));
+        if (t < 1) requestAnimationFrame(tick); else resolve();
+      };
+      requestAnimationFrame(tick);
+    });
+  }
+
+  async function runAutoMixStep(step) {
+    if (!autoMix.active) return;
+    const a = decks.a, b = decks.b;
+    switch (step) {
+      case 1:
+        if (!a?.audio?.src || !b?.audio?.src) {
+          toast('Carga o inicia las demos en ambos decks antes de la guía.');
+          stopAutoMix();
+          return;
+        }
+        setAutoMixStatus('PASO 1 · VERIFICAR', 'Ambos decks tienen audio local/demo. Preparando tempo.', 'Paso 1 / 5');
+        break;
+      case 2:
+        setAutoMixStatus('PASO 2 · TEMPO', 'Igualando el BPM de Deck B al de Deck A (solo audio local/demo).', 'Paso 2 / 5');
+        syncDeck('b');
+        await delay(700);
+        break;
+      case 3:
+        setAutoMixStatus('PASO 3 · FASE', 'Alineando el primer beat de Deck B con Deck A.', 'Paso 3 / 5');
+        try {
+          const offsetMs = measurePhaseOffset(a, b);
+          nudgeDeck('b', -offsetMs / 1000);
+        } catch (e) { /* defensivo */ }
+        await delay(500);
+        break;
+      case 4:
+        setAutoMixStatus('PASO 4 · PREPARAR', 'Crossfader a A, volúmenes y EQ neutros para la transición.', 'Paso 4 / 5');
+        setCrossfader(0);
+        autoMixSetVolume('a', 0.82);
+        autoMixSetVolume('b', 0.78);
+        resetAutoMixEq('a');
+        resetAutoMixEq('b');
+        await delay(600);
+        break;
+      case 5:
+        setAutoMixStatus('PASO 5 · CROSSFADE', 'Transición automática de A a B (crossfader).', 'Paso 5 / 5');
+        await animateAutoMixCrossfade(0, 100, 9000);
+        if (!autoMix.active) return;
+        setAutoMixStatus('COMPLETADO', 'Mezcla automática finalizada. Comprueba el beatmatch.', 'Listo');
+        try { checkMix(); } catch (e) { /* defensivo */ }
+        stopAutoMix();
+        break;
+      default:
+        break;
+    }
+  }
+
+  function startAutoMix() {
+    ensureAudio();
+    autoMix.step = 1;
+    autoMixSetControls(true);
+    setAutoMixStatus('PASO 1 · VERIFICAR', 'Iniciando guía de mezcla automática.', 'Paso 1 / 5');
+    runAutoMixStep(1);
+  }
+
+  function nextAutoMixStep() {
+    if (!autoMix.active) return;
+    autoMix.step = Math.min(autoMix.step + 1, autoMix.total);
+    runAutoMixStep(autoMix.step);
+  }
+
+  function stopAutoMix() {
+    autoMix.active = false;
+    autoMixSetControls(false);
+    if (autoMix.step < autoMix.total) {
+      setAutoMixStatus('DETENIDO', 'Guía detenida. Puedes reanudar con INICIAR GUÍA.', `Paso ${autoMix.step} / 5`);
+    }
+  }
+
   function setStatus(text) { $('#audio-status').textContent = text; }
 
   function toast(message) {
@@ -873,6 +987,9 @@
   $$('[data-pitch]').forEach(input => input.addEventListener('input', () => { ensureAudio(); setPitch(input.dataset.pitch, input.value); }));
   $('#crossfader').addEventListener('input', event => { ensureAudio(); setCrossfader(event.target.value); });
   $('#check-beat').addEventListener('click', checkMix);
+  $('#auto-mix-start').addEventListener('click', startAutoMix);
+  $('#auto-mix-next').addEventListener('click', nextAutoMixStep);
+  $('#auto-mix-stop').addEventListener('click', stopAutoMix);
   $('#midi-button').addEventListener('click', enableMidi);
   $('#midi-target-select').addEventListener('change', () => { midiLearnEnabled = false; updateMidiLearnStatus(); });
   $('#midi-learn-toggle').addEventListener('click', () => {
