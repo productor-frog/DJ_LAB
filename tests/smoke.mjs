@@ -53,6 +53,39 @@ try {
   check('Playlist local disponible', await page.locator('#playlist-files').count() === 1 && await page.locator('#mix-playlist').count() === 1);
   check('Sin reproductores externos', await page.locator('iframe').count() === 0 && await page.locator('[id*="youtube"], [class*="youtube"]').count() === 0);
 
+  const repositoryTracks = [
+    { name: 'beautiful feeling (vita)', file: '001 - beautiful feeling (vita).mp3' },
+    { name: '[432Hz] Ultraviolet', file: '002 - [432Hz] Ultraviolet.mp3' },
+    { name: '[432Hz] Neon Boulevard', file: '003 - [432Hz] Neon Boulevard.mp3' },
+    { name: 'gris', file: '004 - gris.mp3' },
+  ];
+  for (const track of repositoryTracks) {
+    const libraryRow = page.locator('#library-body tr').filter({ hasText: track.name });
+    const playlistItem = page.locator('#mix-playlist .mix-playlist-item').filter({ hasText: track.name });
+    check(`Biblioteca incluye ${track.name}`, await libraryRow.count() === 1);
+    check(`Playlist incluye ${track.name} con carga a ambos decks`, await playlistItem.count() === 1 && await playlistItem.getByRole('button').count() === 2);
+    const encodedPath = track.file.split('/').map(encodeURIComponent).join('/');
+    const audioResponse = await page.request.head(`${BASE_URL}/tests/${encodedPath}`);
+    check(`MP3 disponible: ${track.name}`, audioResponse.status() === 200 && (audioResponse.headers()['content-type'] || '').startsWith('audio/'), `${audioResponse.status()} ${audioResponse.headers()['content-type'] || ''}`);
+  }
+  const preloadedDecks = await page.evaluate(() => ['a', 'b'].map(id => ({
+    id,
+    name: document.querySelector(`#track-${id}`)?.textContent,
+    path: document.querySelector(`#audio-${id}`)?.currentSrc ? decodeURIComponent(new URL(document.querySelector(`#audio-${id}`).currentSrc).pathname) : '',
+    canPlayMp3: Boolean(document.querySelector(`#audio-${id}`)?.canPlayType('audio/mpeg')),
+  })));
+  check('Deck A precargado con MP3 local', preloadedDecks[0].name === repositoryTracks[0].name && preloadedDecks[0].path.endsWith(`/tests/${repositoryTracks[0].file}`) && preloadedDecks[0].canPlayMp3, JSON.stringify(preloadedDecks[0]));
+  check('Deck B precargado con MP3 local', preloadedDecks[1].name === repositoryTracks[1].name && preloadedDecks[1].path.endsWith(`/tests/${repositoryTracks[1].file}`) && preloadedDecks[1].canPlayMp3, JSON.stringify(preloadedDecks[1]));
+  for (const [track, deck] of [[repositoryTracks[2], 'A'], [repositoryTracks[3], 'B']]) {
+    await page.locator('#mix-playlist .mix-playlist-item').filter({ hasText: track.name }).getByRole('button', { name: `Cargar ${track.name} en Deck ${deck}` }).click();
+    await page.waitForFunction(({ id, file }) => {
+      const audio = document.querySelector(`#audio-${id.toLowerCase()}`);
+      return audio?.currentSrc && decodeURIComponent(new URL(audio.currentSrc).pathname).endsWith(`/tests/${file}`);
+    }, { id: deck, file: track.file });
+    const loadedName = await page.locator(`#track-${deck.toLowerCase()}`).textContent();
+    check(`${track.name} carga en Deck ${deck}`, loadedName === track.name, loadedName);
+  }
+
   const title = await page.title();
   check('Título DJ Lab', /DJ Lab/i.test(title), title);
 
