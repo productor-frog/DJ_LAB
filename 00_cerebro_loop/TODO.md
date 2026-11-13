@@ -14,7 +14,7 @@
 - [x] **C — Crates y setlists locales:** creación, selección, validación de nombre duplicado, añadir/reordenar/quitar pistas, resumen con duración total y persistencia local de IDs + metadatos (sin guardar archivos de audio); cubierto por `./smoke.sh`.
 - [ ] **C — Planificación de sets (siguiente ampliación):** continuar la narrativa de setlist con flujo de producción/energía, orden de temas y escenarios más avanzados; la base de metadatos y reordenación ya quedó implementada.
 - [x] **D — Herramientas DJ:** calculadora BPM (pitch estimado, validación y rango ±8%), rueda Camelot (24 tonalidades, relativa/vecina/salto de energía/cambio con riesgo) y conteo de compases/frases (1–64 compases, duración de compás y frase). Cubierto por `./smoke.sh`.
-- [ ] **E — Explorar:** crear índice curado y clasificado de recursos de aprendizaje; enlaces externos opcionales, nunca dependencias de funciones centrales.
+- [x] **E — Explorar:** índice curado de seis rutas por nivel y tema enlazadas a las prácticas/herramientas internas; enlaces externos opcionales, nunca dependencias de funciones centrales. Cubierto por `./smoke.sh`.
 - [x] Investigación de 20 referencias y principios de implementación independiente, open source y local-first registrada en `COMPETITIVE_RESEARCH.md`.
 
 No hay fallos de implementación pendientes ni tareas marcadas «REQUIERE HUMANO». La lista aceptada es backlog, no evidencia de que esas funciones ya existan.

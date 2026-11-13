@@ -40,7 +40,7 @@ try {
   check('Inicio abre con índice principal', await page.locator('#home').count() === 1 && await page.locator('#home-title').isVisible());
   check('Portal ofrece cinco áreas', await page.locator('.portal-card').count() === 5);
   check('Navegación a cabina y biblioteca', await page.locator('.top-nav a[href="#cabina"]').count() === 1 && await page.locator('.top-nav a[href="#biblioteca"]').count() === 1);
-  check('Herramientas activas y Explorar sigue planificado', await page.locator('.portal-card[href="#herramientas"]').count() === 1 && await page.locator('.portal-card-planned').count() === 1 && (await page.locator('#recursos small').textContent()).includes('planificado'));
+  check('Herramientas y Explorar activos', await page.locator('.portal-card[href="#herramientas"]').count() === 1 && await page.locator('.portal-card[href="#recursos"]').count() === 1 && await page.locator('.portal-card-planned').count() === 0);
   const bpmSource = page.locator('#bpm-source');
   const bpmTarget = page.locator('#bpm-target');
   const bpmResult = page.locator('#bpm-result');
@@ -78,6 +78,8 @@ try {
   await page.locator('#phrase-bars').fill('8');
   await page.locator('#phrase-bpm').fill('401');
   check('Fraseo rechaza BPM fuera de 20–400', await page.locator('#phrase-duration').textContent() === 'BPM no válido');
+  check('Explorar muestra seis rutas curadas', await page.locator('#recursos .resource-card').count() === 6);
+  check('Rutas de Explorar enlazan a secciones internas', await page.locator('#recursos .resource-card').evaluateAll(cards => cards.every(card => (card.getAttribute('href') || '').startsWith('#'))));
   await page.locator('.portal-card[href="#cabina"]').click();
   check('Portal navega a cabina sin quitar la cabina del DOM', page.url().endsWith('#cabina') && await page.locator('#audio-a').count() === 1);
   for (const width of [390, 320]) {
