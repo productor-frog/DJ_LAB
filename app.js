@@ -17,6 +17,7 @@
   ];
   const mixPlaylist = [...REPO_TRACKS];
   let audioContext;
+  let libraryQuery = '';
   let crossPosition = 0.5;
   let toastTimer;
   let midiAccess;
@@ -686,12 +687,21 @@
 
   function renderLibrary() {
     const body = $('#library-body');
-    $('#library-count').textContent = `${library.length} ${library.length === 1 ? 'pista' : 'pistas'}`;
+    const normalizedQuery = libraryQuery.trim().toLocaleLowerCase();
+    const matchingTracks = library.filter(track => [track.name, track.artist, track.source, track.bpm].some(value => String(value ?? '').toLocaleLowerCase().includes(normalizedQuery)));
+    const visibleTracks = matchingTracks.slice(0, 20);
+    $('#library-count').textContent = normalizedQuery
+      ? `${matchingTracks.length} de ${library.length} pistas`
+      : `${library.length} ${library.length === 1 ? 'pista' : 'pistas'}`;
     if (!library.length) {
       body.innerHTML = '<tr class="empty-row"><td colspan="5"><span>♫</span><strong>Tu biblioteca empieza acá</strong><small>Inicia una demo o carga archivos de audio desde tu dispositivo.</small></td></tr>';
       return;
     }
-    body.replaceChildren(...library.slice(0, 20).map(track => {
+    if (!matchingTracks.length) {
+      body.innerHTML = '<tr class="empty-row"><td colspan="5"><span>⌕</span><strong>No hay coincidencias</strong><small>Prueba con otro nombre, artista o fuente.</small></td></tr>';
+      return;
+    }
+    body.replaceChildren(...visibleTracks.map(track => {
       const row = document.createElement('tr');
       const name = document.createElement('td'); name.innerHTML = `<div class="library-track"><i>♪</i><span><b></b><small></small></span></div>`;
       name.querySelector('b').textContent = track.name; name.querySelector('small').textContent = track.artist || track.source;
@@ -977,6 +987,10 @@
   $('#midi-clear-maps').addEventListener('click', () => {
     for (const target of Object.keys(midiMap)) delete midiMap[target];
     persistMidiMap(); updateMidiLearnStatus(); toast('Asignaciones MIDI reiniciadas.');
+  });
+  $('#library-search').addEventListener('input', event => {
+    libraryQuery = event.target.value;
+    renderLibrary();
   });
   $('#import-library-file').addEventListener('change', event => {
     importLibraryFile(event.target.files?.[0]);

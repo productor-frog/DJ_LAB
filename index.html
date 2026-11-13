@@ -12,13 +12,33 @@
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <a class="brand" href="#top" aria-label="DJ Lab inicio"><span class="brand-mark">◉</span><span>DJ<span class="brand-accent">LAB</span><small>DE CERO A LEYENDA</small></span></a>
+      <a class="brand" href="#home" aria-label="DJ Lab inicio"><span class="brand-mark">◉</span><span>DJ<span class="brand-accent">LAB</span><small>DE CERO A LEYENDA</small></span></a>
+      <nav class="top-nav" aria-label="Navegación principal">
+        <a href="#home">Inicio</a>
+        <a href="#cabina">Cabina</a>
+        <a href="#biblioteca">Biblioteca</a>
+      </nav>
       <div class="session-pill"><span class="live-dot"></span><span id="audio-status">CABINA LISTA</span></div>
       <div class="top-actions"><button class="quiet-button" id="midi-button" type="button" title="Conectar MIDI · pulsa y mueve un control para aprender su asignación">⌁ MIDI <span id="midi-state">OFF</span></button><button class="avatar" type="button" aria-label="Perfil">DJ</button></div>
     </header>
 
     <main id="top">
-      <section class="intro-row">
+      <section class="home-index" id="home" aria-labelledby="home-title">
+        <div class="portal-header">
+          <p class="eyebrow">ÍNDICE DE APRENDIZAJE <span>•</span> DJ LAB</p>
+          <h1 id="home-title">Tu práctica, tu biblioteca y tu <em>ruta de DJ</em>.</h1>
+          <p class="intro-copy">Empieza con la base, entra a la cabina y prepara tu próximo set con herramientas locales y abiertas.</p>
+        </div>
+        <nav class="portal-grid" aria-label="Secciones de DJ Lab">
+          <a class="portal-card portal-card-primary" href="#cabina"><span class="portal-kicker">01 / PRACTICAR</span><strong>Cabina</strong><small>Dos decks, EQ, BPM, pitch, cue y mezcla en vivo.</small><span class="portal-link">Entrar a la cabina ↗</span></a>
+          <a class="portal-card" href="#aprendizaje"><span class="portal-kicker">02 / APRENDER</span><strong>Beatmatching</strong><small>Inicia la clase guiada y practica tempo, fase y crossfade.</small><span class="portal-link">Ver práctica ↗</span></a>
+          <a class="portal-card" href="#biblioteca"><span class="portal-kicker">03 / ORGANIZAR</span><strong>Biblioteca local</strong><small>Explora pistas de ejemplo o añade audio desde este dispositivo.</small><span class="portal-link">Ver colección ↗</span></a>
+          <a class="portal-card portal-card-planned" href="#herramientas"><span class="portal-kicker">04 / EN CAMINO</span><strong>Herramientas DJ</strong><small>Teoría armónica, preparación de sets y utilidades de análisis.</small><span class="portal-link">Ver próximos pasos ↗</span></a>
+          <a class="portal-card portal-card-planned" href="#recursos"><span class="portal-kicker">05 / EN CAMINO</span><strong>Explorar</strong><small>Rutas de aprendizaje, géneros y recursos seleccionados.</small><span class="portal-link">Ver próximos pasos ↗</span></a>
+        </nav>
+      </section>
+
+      <section class="intro-row" id="aprendizaje">
         <div><p class="eyebrow">PRÁCTICA DE HOY <span>•</span> NIVEL 01</p><h1>Tu primera <em>mezcla.</em></h1><p class="intro-copy">Dos decks, un oído atento y el primer paso para tomar el control.</p></div>
         <div class="lesson-progress"><span>LECCIÓN 01 / 04</span><div class="progress-track"><i></i></div><b>25%</b></div>
       </section>
@@ -31,7 +51,7 @@
         <div class="wave-label wave-b"><span class="channel-dot"></span> DECK B <small id="wave-title-b">CARGA UNA PISTA</small><span class="wave-time" id="time-b">00:00</span></div>
       </section>
 
-      <section class="mixer-layout" aria-label="Consola de mezcla">
+      <section class="mixer-layout" id="cabina" aria-label="Consola de mezcla">
         <article class="deck deck-a" data-deck="a">
           <div class="deck-heading"><span class="deck-index">A</span><div><h2>DECK A</h2><p>CANAL IZQUIERDO</p></div><span class="deck-led"></span></div>
           <div class="track-card"><div class="record-art art-a"><span>♪</span></div><div class="track-info"><strong id="track-a">Sin pista cargada</strong><span id="artist-a">Importa audio o inicia la demo</span></div><button class="icon-button cue-button" data-action="cue" data-deck="a" aria-label="Cue Deck A">CUE</button></div>
@@ -92,11 +112,20 @@
         </article>
       </section>
 
-      <section class="library-section">
+      <section class="library-section" id="biblioteca">
         <div class="library-heading"><div><p class="eyebrow">TU COLECCIÓN</p><h2>Biblioteca <em>local</em></h2></div><div class="library-actions"><span id="library-count">0 pistas</span><label class="quiet-button import-button">↥ IMPORTAR<input id="import-library-file" type="file" accept="application/json,.json" aria-label="Importar biblioteca JSON"></label><button class="quiet-button" id="export-library" type="button">↧ EXPORTAR</button></div></div>
         <aside class="playlist-card" aria-label="Playlist para mezclar"><div class="playlist-heading"><span class="playlist-icon">♫</span><div class="playlist-copy"><strong>MEZCLA TU PLAYLIST AQUÍ</strong><small>Añade archivos de audio de tu dispositivo y asígnalos a Deck A o Deck B. Los archivos permanecen en este dispositivo.</small></div><label class="playlist-add">＋ AÑADIR AUDIOS<input id="playlist-files" type="file" accept="audio/*" multiple aria-label="Añadir archivos de audio a tu playlist"></label></div><ul id="mix-playlist" class="mix-playlist" aria-live="polite"><li class="playlist-empty">Aún no hay pistas. Añade archivos de audio para empezar a mezclar.</li></ul></aside>
+        <label class="library-search-label" for="library-search">BUSCAR PISTAS</label><input id="library-search" class="library-search" type="search" placeholder="Nombre, artista o fuente…" autocomplete="off">
         <div class="library-table-wrap"><table><thead><tr><th>PISTA</th><th>DURACIÓN</th><th>BPM</th><th>FUENTE</th><th>ACCIÓN</th></tr></thead><tbody id="library-body"><tr class="empty-row"><td colspan="5"><span>♫</span><strong>Tu biblioteca empieza acá</strong><small>Inicia una demo o carga archivos de audio desde tu dispositivo.</small></td></tr></tbody></table></div>
         <p class="library-footnote"><span>◉</span> Biblioteca guardada solo en este dispositivo. Los archivos de audio no se copian ni se cargan.</p>
+      </section>
+
+      <section class="next-up-section" aria-labelledby="next-up-title">
+        <div class="next-up-heading"><div><p class="eyebrow">PRÓXIMAMENTE · ROADMAP ABIERTO</p><h2 id="next-up-title">La ruta <em>continúa.</em></h2></div><p>Estas áreas están planificadas, aún no implementadas. DJ Lab seguirá siendo local-first y sin depender de suscripciones.</p></div>
+        <div class="next-up-grid">
+          <article class="next-up-card" id="herramientas"><span>04 · HERRAMIENTAS DJ</span><h3>Teoría y preparación</h3><p>Explorar tonalidad y armonía, analizar pistas y planificar transiciones de forma explicable.</p><small>Estado: planificado</small></article>
+          <article class="next-up-card" id="recursos"><span>05 · EXPLORAR</span><h3>Aprender a tu ritmo</h3><p>Rutas por nivel, fundamentos de géneros y recursos abiertos para seguir practicando.</p><small>Estado: planificado</small></article>
+        </div>
       </section>
     </main>
     <footer><span>DJ LAB <i>•</i> DE CERO A LEYENDA</span><span>APRENDE · ESCUCHA · MEZCLA</span></footer>

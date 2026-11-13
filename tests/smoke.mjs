@@ -38,6 +38,13 @@ function check(name, ok, detail = '') { checks.push({ name, ok, detail }); if (!
 try {
   const response = await page.goto(BASE_URL, { waitUntil: 'networkidle', timeout: 30000 });
   check('HTTP 200', !!response && response.status() === 200, response ? String(response.status()) : 'no response');
+  check('Inicio abre con índice principal', await page.locator('#home').count() === 1 && await page.locator('#home-title').isVisible());
+  check('Portal ofrece cinco áreas', await page.locator('.portal-card').count() === 5);
+  check('Navegación a cabina y biblioteca', await page.locator('.top-nav a[href="#cabina"]').count() === 1 && await page.locator('.top-nav a[href="#biblioteca"]').count() === 1);
+  check('Áreas futuras se identifican como planificadas', await page.locator('.portal-card-planned').count() === 2 && await page.locator('.next-up-card small').allTextContents().then(labels => labels.every(label => label.includes('planificado'))));
+  await page.locator('.portal-card[href="#cabina"]').click();
+  check('Portal navega a cabina sin quitar la cabina del DOM', page.url().endsWith('#cabina') && await page.locator('#audio-a').count() === 1);
+  await page.locator('.top-nav a[href="#home"]').click();
 
   await page.waitForSelector('#audio-a', { state: 'attached', timeout: 10000 });
   await page.waitForSelector('#audio-b', { state: 'attached', timeout: 10000 });
@@ -68,6 +75,17 @@ try {
     const audioResponse = await page.request.head(`${BASE_URL}/tests/${encodedPath}`);
     check(`MP3 disponible: ${track.name}`, audioResponse.status() === 200 && (audioResponse.headers()['content-type'] || '').startsWith('audio/'), `${audioResponse.status()} ${audioResponse.headers()['content-type'] || ''}`);
   }
+
+  const librarySearch = page.locator('#library-search');
+  await librarySearch.fill('biblioteca DJ Lab');
+  check('Búsqueda filtra por artista y actualiza conteo', await page.locator('#library-body tr').count() === 4 && (await page.locator('#library-count').textContent()).trim() === '4 de 4 pistas');
+  await librarySearch.fill('ULTRAVIOLET');
+  check('Búsqueda por nombre ignora mayúsculas', await page.locator('#library-body tr').count() === 1 && (await page.locator('#library-body').textContent()).includes('[432Hz] Ultraviolet') && (await page.locator('#library-count').textContent()).trim() === '1 de 4 pistas');
+  await librarySearch.fill('sin coincidencia posible');
+  check('Búsqueda sin resultados muestra estado vacío y conteo cero', await page.locator('#library-body .empty-row strong').textContent() === 'No hay coincidencias' && (await page.locator('#library-count').textContent()).trim() === '0 de 4 pistas');
+  await librarySearch.fill('');
+  check('Limpiar búsqueda restaura biblioteca completa', await page.locator('#library-body tr').count() === 4 && (await page.locator('#library-count').textContent()).trim() === '4 pistas');
+
   const preloadedDecks = await page.evaluate(() => ['a', 'b'].map(id => ({
     id,
     name: document.querySelector(`#track-${id}`)?.textContent,
