@@ -19,7 +19,6 @@ const pw = await resolvePlaywright();
 const chromium = (pw.default && pw.default.chromium) || pw.chromium;
 
 const browser = await chromium.launch({
-  executablePath: '/home/runner/.cache/ms-playwright/chromium-1254/chrome-linux64/chrome',
   headless: true,
   args: ['--no-sandbox'],
 });
@@ -41,7 +40,28 @@ try {
   check('Inicio abre con índice principal', await page.locator('#home').count() === 1 && await page.locator('#home-title').isVisible());
   check('Portal ofrece cinco áreas', await page.locator('.portal-card').count() === 5);
   check('Navegación a cabina y biblioteca', await page.locator('.top-nav a[href="#cabina"]').count() === 1 && await page.locator('.top-nav a[href="#biblioteca"]').count() === 1);
-  check('Áreas futuras se identifican como planificadas', await page.locator('.portal-card-planned').count() === 2 && await page.locator('.next-up-card small').allTextContents().then(labels => labels.every(label => label.includes('planificado'))));
+  check('Herramientas BPM activas y Explorar sigue planificado', await page.locator('.portal-card[href="#herramientas"]').count() === 1 && await page.locator('.portal-card-planned').count() === 1 && (await page.locator('#recursos small').textContent()).includes('planificado'));
+  const bpmSource = page.locator('#bpm-source');
+  const bpmTarget = page.locator('#bpm-target');
+  const bpmResult = page.locator('#bpm-result');
+  await bpmSource.fill('120');
+  await bpmTarget.fill('124');
+  check('Calculadora estima +3.3% para 120→124 BPM', await page.locator('#bpm-pitch-result').textContent() === '+3.3% pitch' && (await page.locator('#bpm-guidance').textContent()).includes('±8%') && !await bpmResult.evaluate(element => element.classList.contains('is-out-of-range')));
+  await bpmTarget.fill('110');
+  check('Calculadora muestra pitch negativo cuando baja el tempo', await page.locator('#bpm-pitch-result').textContent() === '-8.3% pitch' && await bpmResult.evaluate(element => element.classList.contains('is-out-of-range')));
+  await bpmTarget.fill('129.6');
+  check('Calculadora acepta exactamente el límite de +8%', await page.locator('#bpm-pitch-result').textContent() === '+8.0% pitch' && !await bpmResult.evaluate(element => element.classList.contains('is-out-of-range')));
+  await bpmTarget.fill('132');
+  check('Calculadora avisa al superar ±8%', await page.locator('#bpm-pitch-result').textContent() === '+10.0% pitch' && await bpmResult.evaluate(element => element.classList.contains('is-out-of-range')) && (await page.locator('#bpm-guidance').textContent()).includes('Supera'));
+  await bpmTarget.fill('401');
+  check('Calculadora rechaza BPM fuera de 20–400', await page.locator('#bpm-pitch-result').textContent() === 'BPM no válido' && (await page.locator('#bpm-guidance').textContent()).includes('20 y 400') && !await bpmResult.evaluate(element => element.classList.contains('is-out-of-range')));
+  await bpmTarget.fill('');
+  check('Calculadora rechaza un BPM vacío', await page.locator('#bpm-pitch-result').textContent() === 'BPM no válido');
+  await bpmSource.fill('120');
+  await bpmTarget.fill('124');
+  const calculatorShotDir = '/tmp/opencode';
+  fs.mkdirSync(calculatorShotDir, { recursive: true });
+  await page.locator('#herramientas').screenshot({ path: `${calculatorShotDir}/bpm-calculator.jpg`, type: 'jpeg', quality: 60 });
   await page.locator('.portal-card[href="#cabina"]').click();
   check('Portal navega a cabina sin quitar la cabina del DOM', page.url().endsWith('#cabina') && await page.locator('#audio-a').count() === 1);
   for (const width of [390, 320]) {

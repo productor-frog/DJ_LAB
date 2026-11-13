@@ -1150,6 +1150,29 @@
     for (const target of Object.keys(midiMap)) delete midiMap[target];
     persistMidiMap(); updateMidiLearnStatus(); toast('Asignaciones MIDI reiniciadas.');
   });
+  function updateBpmTool() {
+    const source = Number($('#bpm-source').value);
+    const target = Number($('#bpm-target').value);
+    const result = $('#bpm-result');
+    const pitchResult = $('#bpm-pitch-result');
+    const guidance = $('#bpm-guidance');
+    if (!Number.isFinite(source) || !Number.isFinite(target) || source < 20 || source > 400 || target < 20 || target > 400) {
+      pitchResult.textContent = 'BPM no válido';
+      guidance.textContent = 'Introduce valores entre 20 y 400 BPM.';
+      result.classList.remove('is-out-of-range');
+      return;
+    }
+    const pitch = (target / source - 1) * 100;
+    const roundedPitch = Math.abs(pitch) < 0.05 ? 0 : pitch;
+    pitchResult.textContent = `${roundedPitch > 0 ? '+' : ''}${roundedPitch.toFixed(1)}% pitch`;
+    result.classList.toggle('is-out-of-range', Math.abs(pitch) > 8);
+    guidance.textContent = Math.abs(pitch) <= 8
+      ? (Math.abs(pitch) < 0.05 ? 'Los tempos ya coinciden.' : 'Dentro de un rango habitual de ±8%.')
+      : 'Supera el rango de ±8%; considera otra pista o un rango de pitch mayor.';
+  }
+  $('#bpm-source').addEventListener('input', updateBpmTool);
+  $('#bpm-target').addEventListener('input', updateBpmTool);
+  updateBpmTool();
   $('#crate-create-form').addEventListener('submit', event => {
     event.preventDefault();
     const input = $('#crate-name');
