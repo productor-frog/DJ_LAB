@@ -1276,6 +1276,66 @@
   $('#phrase-bpm')?.addEventListener('input', updatePhraseTool);
   $('#phrase-bars')?.addEventListener('input', updatePhraseTool);
   updatePhraseTool();
+
+  const ROUTE_KEY = 'djlab-route-v1';
+  const routeCards = $$('.route-card');
+  const routeLessonIds = new Set(routeCards.map(card => card.dataset.lesson).filter(Boolean));
+  let routeProgress = loadRouteProgress();
+
+  function loadRouteProgress() {
+    try {
+      const value = JSON.parse(localStorage.getItem(ROUTE_KEY) || '[]');
+      if (!Array.isArray(value)) return new Set();
+      return new Set(value.filter(id => typeof id === 'string' && routeLessonIds.has(id)));
+    } catch { return new Set(); }
+  }
+
+  function persistRouteProgress() {
+    try { localStorage.setItem(ROUTE_KEY, JSON.stringify([...routeProgress])); }
+    catch { toast('No se pudo guardar tu ruta en este navegador.'); }
+  }
+
+  function updateRouteProgress() {
+    const score = $('#route-score');
+    const bar = $('#route-progress-bar');
+    const total = routeCards.length;
+    const completed = routeCards.filter(card => routeProgress.has(card.dataset.lesson)).length;
+    if (score) score.textContent = `${completed} / ${total} completadas`;
+    if (bar) bar.style.width = `${total ? (completed / total) * 100 : 0}%`;
+    for (const card of routeCards) card.classList.toggle('is-complete', routeProgress.has(card.dataset.lesson));
+  }
+
+  for (const card of routeCards) {
+    const quiz = $('.route-quiz', card);
+    if (!quiz) continue;
+    const answer = quiz.dataset.answer;
+    for (const button of $$('.route-options button', quiz)) {
+      button.addEventListener('click', () => {
+        const feedback = $('.route-feedback', quiz);
+        if (!feedback) return;
+        const correct = button.dataset.choice === answer;
+        feedback.textContent = correct ? 'Correcto. Lección completada.' : 'Todavía no. Vuelve a leer la explicación e inténtalo otra vez.';
+        feedback.className = `route-feedback ${correct ? 'is-correct' : 'is-wrong'}`;
+        if (correct && card.dataset.lesson) {
+          routeProgress.add(card.dataset.lesson);
+          persistRouteProgress();
+          updateRouteProgress();
+        }
+      });
+    }
+  }
+
+  $('#route-reset')?.addEventListener('click', () => {
+    routeProgress = new Set();
+    persistRouteProgress();
+    for (const feedback of $$('.route-feedback')) {
+      feedback.textContent = '';
+      feedback.className = 'route-feedback';
+    }
+    updateRouteProgress();
+    toast('Ruta reiniciada.');
+  });
+  updateRouteProgress();
   $('#crate-create-form').addEventListener('submit', event => {
     event.preventDefault();
     const input = $('#crate-name');
