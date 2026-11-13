@@ -29,4 +29,4 @@
 - [x] Retirar la integración de YouTube y sus estilos, mensajes y referencias de inicialización.
 
 ## 🐛 Bugs Conocidos
-- [x] No hay bugs propios reproducibles registrados.
+- [x] Corregido: desbordamiento horizontal en la cabina móvil causado por la cabecera/acciones de Biblioteca a 390px. Verificado con humo a 390px y 320px y capturas visuales a 390px/1280px; no quedan otros bugs de preview concretos y reproducibles registrados.

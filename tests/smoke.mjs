@@ -44,6 +44,12 @@ try {
   check('Áreas futuras se identifican como planificadas', await page.locator('.portal-card-planned').count() === 2 && await page.locator('.next-up-card small').allTextContents().then(labels => labels.every(label => label.includes('planificado'))));
   await page.locator('.portal-card[href="#cabina"]').click();
   check('Portal navega a cabina sin quitar la cabina del DOM', page.url().endsWith('#cabina') && await page.locator('#audio-a').count() === 1);
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 844 });
+    const layout = await page.evaluate(() => ({ viewport: window.innerWidth, document: document.documentElement.scrollWidth }));
+    check(`Cabina sin desbordamiento horizontal a ${width}px`, layout.document <= layout.viewport, `${layout.document}px de contenido para ${layout.viewport}px de viewport`);
+  }
+  await page.setViewportSize({ width: 1280, height: 900 });
   await page.locator('.top-nav a[href="#home"]').click();
 
   await page.waitForSelector('#audio-a', { state: 'attached', timeout: 10000 });
