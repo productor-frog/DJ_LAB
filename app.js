@@ -9,7 +9,13 @@
   const MIDI_LABELS = Object.fromEntries([...$('#midi-target-select')?.options || []].map(option => [option.value, option.textContent]));
   const TARGET_BPM = 120;
   const decks = {};
-  const mixPlaylist = [];
+  const REPO_TRACKS = [
+    { id: 'repo-001', name: 'beautiful feeling (vita)', artist: 'Audio local · biblioteca DJ Lab', url: 'tests/001 - beautiful feeling (vita).mp3', bpm: null, duration: 0, source: 'Local', kind: 'local' },
+    { id: 'repo-002', name: '[432Hz] Ultraviolet', artist: 'Audio local · biblioteca DJ Lab', url: 'tests/002 - [432Hz] Ultraviolet.mp3', bpm: null, duration: 0, source: 'Local', kind: 'local' },
+    { id: 'repo-003', name: '[432Hz] Neon Boulevard', artist: 'Audio local · biblioteca DJ Lab', url: 'tests/003 - [432Hz] Neon Boulevard.mp3', bpm: null, duration: 0, source: 'Local', kind: 'local' },
+    { id: 'repo-004', name: 'gris', artist: 'Audio local · biblioteca DJ Lab', url: 'tests/004 - gris.mp3', bpm: null, duration: 0, source: 'Local', kind: 'local' }
+  ];
+  const mixPlaylist = [...REPO_TRACKS];
   let audioContext;
   let crossPosition = 0.5;
   let toastTimer;
@@ -18,7 +24,11 @@
   let midiLearnTarget = null;
   let lastJogValue = new Map();
   const midiMap = loadMidiMap();
-  const library = loadSavedLibrary();
+  const savedLibrary = loadSavedLibrary();
+  const library = [
+    ...REPO_TRACKS.map(normalizeLibraryTrack).filter(Boolean),
+    ...savedLibrary.filter(track => !REPO_TRACKS.some(repositoryTrack => repositoryTrack.id === track.id))
+  ];
   const midiButtonStates = new Map();
 
   function normalizeLibraryTrack(item) {
@@ -140,6 +150,12 @@
     deck.audio.loop = Boolean(details.loop);
     deck.audio.onloadedmetadata = () => {
       if (!deck.demo) analyzeOfflineBpm(id);
+      const entry = library.find(track => track.id === details.id || (track.name === deck.trackName && track.source === 'Local'));
+      if (entry && Number.isFinite(deck.audio.duration) && deck.audio.duration > 0) {
+        entry.duration = deck.audio.duration;
+        persistLibrary();
+        renderLibrary();
+      }
     };
     deck.trackName = details.name;
     deck.artist = details.artist || (details.demo ? 'DJ Lab · demo generativa' : 'Archivo local · solo este dispositivo');
@@ -713,7 +729,21 @@
     }
   }
 
+  function loadRepositoryTrack(track, id, notify = true) {
+    const url = track.url.split('/').map(encodeURIComponent).join('/');
+    attachTrack(id, url, {
+      id: track.id, name: track.name, artist: track.artist, duration: track.duration,
+      bpm: track.bpm, demo: false, loop: false
+    });
+    if (notify) toast(`${track.name} cargado en Deck ${id.toUpperCase()}`);
+  }
+
   function loadLibraryTrack(track, id) {
+    const repositoryTrack = REPO_TRACKS.find(item => item.id === track.id);
+    if (repositoryTrack) {
+      loadRepositoryTrack(repositoryTrack, id);
+      return;
+    }
     if (track.kind === 'demo') {
       startDemo(id);
       return;
@@ -756,12 +786,12 @@
       list.replaceChildren(empty);
       return;
     }
-    list.replaceChildren(...mixPlaylist.map((file, index) => {
+    list.replaceChildren(...mixPlaylist.map(track => {
       const item = document.createElement('li');
       item.className = 'mix-playlist-item';
       const name = document.createElement('span');
       name.className = 'mix-playlist-name';
-      name.textContent = file.name;
+      name.textContent = track.name;
       const actions = document.createElement('span');
       actions.className = 'mix-playlist-actions';
       for (const id of ['a', 'b']) {
@@ -769,8 +799,8 @@
         button.type = 'button';
         button.className = 'table-load';
         button.textContent = id.toUpperCase();
-        button.setAttribute('aria-label', `Cargar ${file.name} en Deck ${id.toUpperCase()}`);
-        button.addEventListener('click', () => loadLocalFile(file, id));
+        button.setAttribute('aria-label', `Cargar ${track.name} en Deck ${id.toUpperCase()}`);
+        button.addEventListener('click', () => track.url ? loadRepositoryTrack(track, id) : loadLocalFile(track, id));
         actions.append(button);
       }
       item.append(name, actions);
@@ -964,6 +994,9 @@
     $(`#audio-${id}`).addEventListener('ended', () => updateTransport(id));
   }
   renderLibrary();
+  renderMixPlaylist();
   setCrossfader(50);
+  loadRepositoryTrack(REPO_TRACKS[0], 'a', false);
+  loadRepositoryTrack(REPO_TRACKS[1], 'b', false);
   requestAnimationFrame(animate);
 })();

@@ -5,7 +5,7 @@
 - [x] Cabina educativa de navegador con dos decks, demos y audio local, EQ, pitch, SYNC/CUE y crossfader; se puede practicar sin cuenta ni backend.
 - [x] Análisis FFT por bandas y BPM, evaluación de beatmatch por tempo/fase, coaching direccional de pitch/jog y MIDI learn para audio demo/local.
 - [x] Biblioteca de metadatos con importación/exportación JSON validada, sin incluir archivos de audio.
-- [x] Se retiró la integración y toda la interfaz de reproducción de YouTube. La app solo ofrece demos y archivos de audio locales proporcionados por el usuario.
+- [x] Se retiró la integración y toda la interfaz de reproducción de YouTube. La app ofrece demos, cuatro MP3 incluidos en `tests/` (001/002 precargados en Deck A/B) y archivos locales proporcionados por el usuario; cualquier pista incluida puede cargarse en ambos decks.
 - [x] Mezclas automáticas educativas (v1): guía paso a paso en el centro de la cabina (verificar, igualar tempo, alinear fase, preparar, crossfade automático) usando solo audio local/demo.
 - [x] Clase práctica de beatmatching, separada de la mezcla automática: el usuario ajusta tempo y fase con controles de pitch/JOG, prepara EQ y hace el crossfade manualmente. Verificada de principio a fin con demos locales; JOG B permite correcciones de ±25 ms.
 - [~] Gauntlet visual/funcional frente a VirtualDJ: progreso y evidencia en `GAUNTLET_PROGRESS.md`. La primera pareja de capturas (1280×900) no es comparable: muestra la cabina de DJ Lab y la web promocional de VirtualDJ; crítico independiente no declara ganador. Criterio de éxito: comparar las interfaces reales en estados/tarea equivalentes, con revisión a ciegas, y continuar iterando hasta que DJ Lab gane.
