@@ -50,6 +50,8 @@ try {
   check('Guía auto-mix', await page.locator('#auto-mix-start').count() === 1);
   check('Clase práctica', await page.locator('#lesson-practice-start').count() === 1);
   check('JOG B de la clase', await page.locator('#lesson-jog-back').count() === 1 && await page.locator('#lesson-jog-forward').count() === 1);
+  check('Playlist local disponible', await page.locator('#playlist-files').count() === 1 && await page.locator('#mix-playlist').count() === 1);
+  check('Sin reproductores externos', await page.locator('iframe').count() === 0 && await page.locator('[id*="youtube"], [class*="youtube"]').count() === 0);
 
   const title = await page.title();
   check('Título DJ Lab', /DJ Lab/i.test(title), title);
