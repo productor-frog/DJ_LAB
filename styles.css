@@ -15,5 +15,9 @@
 .auto-mix-card p{margin:0;font-size:9px;line-height:1.45;color:#929aa8}
 .auto-mix-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .auto-mix-primary{height:30px;margin-top:0}
+.lesson-jog-controls{display:flex;gap:6px;flex-wrap:wrap}
+.lesson-jog-controls[hidden]{display:none}
+.lesson-jog-controls .quiet-button{flex:1;min-width:105px;border-color:#54e3dc55;color:var(--cyan)}
+.auto-mix-actions button:disabled{opacity:.45;cursor:not-allowed}
 .auto-mix-card small{font:8px var(--mono);color:#7d8492;letter-spacing:.4px}
-@media(max-width:760px){.auto-mix-actions{flex-direction:column;align-items:stretch}.auto-mix-primary{width:100%}}
+@media(max-width:760px){.auto-mix-actions{flex-direction:column;align-items:stretch}.auto-mix-primary{width:100%}.lesson-jog-controls{display:grid;grid-template-columns:1fr 1fr}.lesson-jog-controls .quiet-button{min-width:0;padding:7px 4px;font-size:8px}}

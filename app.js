@@ -468,7 +468,8 @@
     const card = $('#score-card');
     if (!a.audio.src || !b.audio.src) {
       card.className = 'score-card bad'; $('#score-title').textContent = 'FALTAN PISTAS';
-      $('#score-message').textContent = 'Carga o inicia las demos en ambos decks.'; $('#score-value').textContent = '—'; return;
+      $('#score-message').textContent = 'Carga o inicia las demos en ambos decks.'; $('#score-value').textContent = '—';
+      return { ready: false, bpmDifference: Infinity, phaseDifference: Infinity };
     }
     const bpmDifference = Math.abs(a.bpm - b.bpm);
     const phaseOffset = measurePhaseOffset(a, b);
@@ -488,16 +489,19 @@
     $('#score-message').textContent = message;
     $('#score-value').textContent = `${Math.round(phaseDifference)} ms · ${bpmDifference.toFixed(1)} BPM`;
     $('#phase-readout').textContent = `FASE ${Math.round(phaseDifference)} MS`;
+    return { ready: true, bpmDifference, phaseDifference, phaseOffset, result };
   }
 
-  const autoMix = { active: false, step: 0, total: 5, timer: null };
+  const autoMix = { active: false, step: 0, total: 5, timer: null, mode: 'auto' };
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
   function autoMixSetControls(active) {
     autoMix.active = active;
     $('#auto-mix-start').disabled = active;
+    $('#lesson-practice-start').disabled = active;
     $('#auto-mix-next').disabled = !active;
     $('#auto-mix-stop').disabled = !active;
+    if (!active) $('#lesson-jog-controls').hidden = true;
   }
 
   function setAutoMixStatus(title, description, progress) {
@@ -538,6 +542,7 @@
   async function runAutoMixStep(step) {
     if (!autoMix.active) return;
     const a = decks.a, b = decks.b;
+    if (autoMix.mode === 'practice') $('#lesson-jog-controls').hidden = step !== 3;
     switch (step) {
       case 1:
         if (!a?.audio?.src || !b?.audio?.src) {
@@ -548,50 +553,108 @@
         setAutoMixStatus('PASO 1 · VERIFICAR', 'Ambos decks tienen audio local/demo. Preparando tempo.', 'Paso 1 / 5');
         break;
       case 2:
-        setAutoMixStatus('PASO 2 · TEMPO', 'Igualando el BPM de Deck B al de Deck A (solo audio local/demo).', 'Paso 2 / 5');
-        syncDeck('b');
-        await delay(700);
+        if (autoMix.mode === 'practice') {
+          setAutoMixStatus('PASO 2 · TEMPO', `Mueve PITCH B hasta acercar ambos decks a ${a.bpm.toFixed(1)} BPM. Luego comprueba: diferencia máxima 0.5 BPM.`, 'Paso 2 / 5');
+        } else {
+          setAutoMixStatus('PASO 2 · TEMPO', 'Igualando el BPM de Deck B al de Deck A (solo audio local/demo).', 'Paso 2 / 5');
+          syncDeck('b');
+          await delay(700);
+        }
         break;
       case 3:
-        setAutoMixStatus('PASO 3 · FASE', 'Alineando el primer beat de Deck B con Deck A.', 'Paso 3 / 5');
-        try {
-          const offsetMs = measurePhaseOffset(a, b);
-          nudgeDeck('b', -offsetMs / 1000);
-        } catch (e) { /* defensivo */ }
-        await delay(500);
+        if (autoMix.mode === 'practice') {
+          setAutoMixStatus('PASO 3 · FASE', 'Escucha los golpes y alinea sus pulsos con JOG B ±25 ms. Comprueba cuando la fase esté dentro de 30 ms.', 'Paso 3 / 5');
+          $('#lesson-jog-controls').hidden = false;
+        } else {
+          setAutoMixStatus('PASO 3 · FASE', 'Alineando el primer beat de Deck B con Deck A.', 'Paso 3 / 5');
+          try {
+            const offsetMs = measurePhaseOffset(a, b);
+            nudgeDeck('b', -offsetMs / 1000);
+          } catch (e) { /* defensivo */ }
+          await delay(500);
+        }
         break;
       case 4:
-        setAutoMixStatus('PASO 4 · PREPARAR', 'Crossfader a A, volúmenes y EQ neutros para la transición.', 'Paso 4 / 5');
-        setCrossfader(0);
-        autoMixSetVolume('a', 0.82);
-        autoMixSetVolume('b', 0.78);
-        resetAutoMixEq('a');
-        resetAutoMixEq('b');
-        await delay(600);
+        if (autoMix.mode === 'practice') {
+          setAutoMixStatus('PASO 4 · PREPARAR', 'Deja el crossfader hacia A y escucha la mezcla con la EQ en posición neutra (0 dB). Así preparas una entrada limpia.', 'Paso 4 / 5');
+        } else {
+          setAutoMixStatus('PASO 4 · PREPARAR', 'Crossfader a A, volúmenes y EQ neutros para la transición.', 'Paso 4 / 5');
+          setCrossfader(0);
+          autoMixSetVolume('a', 0.82);
+          autoMixSetVolume('b', 0.78);
+          resetAutoMixEq('a');
+          resetAutoMixEq('b');
+          await delay(600);
+        }
         break;
       case 5:
-        setAutoMixStatus('PASO 5 · CROSSFADE', 'Transición automática de A a B (crossfader).', 'Paso 5 / 5');
-        await animateAutoMixCrossfade(0, 100, 9000);
-        if (!autoMix.active) return;
-        setAutoMixStatus('COMPLETADO', 'Mezcla automática finalizada. Comprueba el beatmatch.', 'Listo');
-        try { checkMix(); } catch (e) { /* defensivo */ }
-        stopAutoMix();
+        if (autoMix.mode === 'practice') {
+          setAutoMixStatus('PASO 5 · CROSSFADE', 'Haz la transición a mano: desplaza el crossfader poco a poco hacia B mientras escuchas cómo cambia el balance.', 'Paso 5 / 5');
+        } else {
+          setAutoMixStatus('PASO 5 · CROSSFADE', 'Transición automática de A a B (crossfader).', 'Paso 5 / 5');
+          await animateAutoMixCrossfade(0, 100, 9000);
+          if (!autoMix.active) return;
+          finishAutoMix('Mezcla automática finalizada. Comprueba el beatmatch.');
+        }
         break;
       default:
         break;
     }
   }
 
-  function startAutoMix() {
+  function beginMixGuide(mode) {
     ensureAudio();
+    autoMix.mode = mode;
     autoMix.step = 1;
     autoMixSetControls(true);
-    setAutoMixStatus('PASO 1 · VERIFICAR', 'Iniciando guía de mezcla automática.', 'Paso 1 / 5');
+    setAutoMixStatus('PASO 1 · VERIFICAR', mode === 'practice'
+      ? 'Confirma que hay una pista local/demo en cada deck. Pulsa Play en ambos para escuchar y practicar.'
+      : 'Iniciando guía de mezcla automática.', 'Paso 1 / 5');
     runAutoMixStep(1);
+  }
+
+  function startAutoMix() { beginMixGuide('auto'); }
+  function startPracticeLesson() { beginMixGuide('practice'); }
+
+  function finishAutoMix(message) {
+    autoMix.active = false;
+    autoMixSetControls(false);
+    setAutoMixStatus('COMPLETADO', message, autoMix.mode === 'practice' ? 'Clase completada · 5 / 5' : 'Listo');
   }
 
   function nextAutoMixStep() {
     if (!autoMix.active) return;
+    if (autoMix.mode === 'practice') {
+      const score = checkMix();
+      if (autoMix.step === 1 && (!decks.a.audio.src || !decks.b.audio.src)) {
+        toast('Carga o inicia una demo en ambos decks para continuar.');
+        return;
+      }
+      if (autoMix.step === 2 && (!score.ready || score.bpmDifference > 0.5)) {
+        setAutoMixStatus('AJUSTA EL TEMPO', 'Usa PITCH B hasta que la diferencia sea de 0.5 BPM o menos; después vuelve a comprobar.', 'Paso 2 / 5');
+        return;
+      }
+      if (autoMix.step === 3 && (!score.ready || score.bpmDifference > 0.5 || score.phaseDifference >= 30)) {
+        setAutoMixStatus('ALINEA LA FASE', 'Mantén el tempo dentro de 0.5 BPM y usa JOG B ±25 ms hasta quedar por debajo de 30 ms.', 'Paso 3 / 5');
+        return;
+      }
+      if (autoMix.step === 4) {
+        const crossfader = Number($('#crossfader').value);
+        const eqIsNeutral = $$('[data-eq]').every(input => Math.abs(Number(input.value)) <= 1.5);
+        if (crossfader > 10 || !eqIsNeutral) {
+          setAutoMixStatus('PREPARA LA MEZCLA', 'Lleva el crossfader hacia A y deja los controles de EQ cerca de 0 dB; luego comprueba otra vez.', 'Paso 4 / 5');
+          return;
+        }
+      }
+      if (autoMix.step === 5) {
+        if (Number($('#crossfader').value) < 90) {
+          setAutoMixStatus('TERMINA EL CROSSFADE', 'Desplaza el crossfader gradualmente hacia B (al menos 90%) y comprueba para terminar.', 'Paso 5 / 5');
+          return;
+        }
+        finishAutoMix('Transición manual completada. ¡Buen trabajo mezclando!');
+        return;
+      }
+    }
     autoMix.step = Math.min(autoMix.step + 1, autoMix.total);
     runAutoMixStep(autoMix.step);
   }
@@ -600,7 +663,7 @@
     autoMix.active = false;
     autoMixSetControls(false);
     if (autoMix.step < autoMix.total) {
-      setAutoMixStatus('DETENIDO', 'Guía detenida. Puedes reanudar con INICIAR GUÍA.', `Paso ${autoMix.step} / 5`);
+      setAutoMixStatus('DETENIDO', 'Guía detenida. Puedes iniciar de nuevo cuando quieras.', `Paso ${autoMix.step} / 5`);
     }
   }
 
@@ -996,6 +1059,9 @@
   $('#crossfader').addEventListener('input', event => { ensureAudio(); setCrossfader(event.target.value); });
   $('#check-beat').addEventListener('click', checkMix);
   $('#auto-mix-start').addEventListener('click', startAutoMix);
+  $('#lesson-practice-start').addEventListener('click', startPracticeLesson);
+  $('#lesson-jog-back').addEventListener('click', () => nudgeDeck('b', -0.025));
+  $('#lesson-jog-forward').addEventListener('click', () => nudgeDeck('b', 0.025));
   $('#auto-mix-next').addEventListener('click', nextAutoMixStep);
   $('#auto-mix-stop').addEventListener('click', stopAutoMix);
   $('#midi-button').addEventListener('click', enableMidi);

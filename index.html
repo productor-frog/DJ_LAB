@@ -55,11 +55,16 @@
           <div class="lesson-card"><div class="lesson-icon">✦</div><div class="lesson-copy"><span class="eyebrow">MISIÓN ACTIVA</span><strong>Beatmatch básico</strong><p>Ajusta el Deck B a <b>120 BPM</b> y alinea su primer beat.</p></div><span class="lesson-level">01</span></div>
           <div class="score-card" id="score-card" aria-live="polite"><span class="score-icon">◎</span><div><strong id="score-title">LISTA PARA MEZCLAR</strong><small id="score-message">Carga dos pistas o inicia las demos</small></div><span class="score-value" id="score-value">—</span></div>
           <div class="auto-mix-card" id="auto-mix-card" aria-live="polite">
-            <div class="auto-mix-head"><span class="eyebrow">MEZCLA AUTOMÁTICA GUIADA</span><strong id="auto-mix-step-title">LISTA</strong></div>
-            <p id="auto-mix-description">Carga dos pistas o inicia las demos; la guía usa solo audio local/demo y nunca YouTube.</p>
+            <div class="auto-mix-head"><span class="eyebrow">CLASE DE MEZCLA · BEATMATCH</span><strong id="auto-mix-step-title">LISTA</strong></div>
+            <p id="auto-mix-description">Practica con las demos o audio local: aprende a igualar tempo, alinear beats y hacer una transición. YouTube queda fuera del mixer.</p>
+            <div class="lesson-jog-controls" id="lesson-jog-controls" hidden>
+              <button class="quiet-button" id="lesson-jog-back" type="button" aria-label="Retrasar Deck B 25 milisegundos">JOG B −25 ms</button>
+              <button class="quiet-button" id="lesson-jog-forward" type="button" aria-label="Adelantar Deck B 25 milisegundos">JOG B +25 ms</button>
+            </div>
             <div class="auto-mix-actions">
-              <button class="check-button auto-mix-primary" id="auto-mix-start" type="button"><span>INICIAR GUÍA</span><span>▶</span></button>
-              <button class="quiet-button" id="auto-mix-next" type="button" disabled>SIGUIENTE PASO</button>
+              <button class="check-button auto-mix-primary" id="lesson-practice-start" type="button"><span>CLASE PRÁCTICA</span><span>▶</span></button>
+              <button class="quiet-button" id="auto-mix-start" type="button">MEZCLA AUTOMÁTICA</button>
+              <button class="quiet-button" id="auto-mix-next" type="button" disabled>COMPROBAR Y SEGUIR</button>
               <button class="quiet-button" id="auto-mix-stop" type="button" disabled>DETENER</button>
             </div>
             <small id="auto-mix-progress">Paso 0 / 5</small>

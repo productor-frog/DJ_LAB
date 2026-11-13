@@ -48,12 +48,45 @@ try {
   check('Crossfader presente', await page.locator('#crossfader').count() === 1);
   check('Botón comprobar mezcla', await page.locator('#check-beat').count() === 1);
   check('Guía auto-mix', await page.locator('#auto-mix-start').count() === 1);
+  check('Clase práctica', await page.locator('#lesson-practice-start').count() === 1);
+  check('JOG B de la clase', await page.locator('#lesson-jog-back').count() === 1 && await page.locator('#lesson-jog-forward').count() === 1);
 
   const title = await page.title();
   check('Título DJ Lab', /DJ Lab/i.test(title), title);
 
   // Allow a short settle time for deferred scripts
   await page.waitForTimeout(1500);
+
+  // Exercise the practical beatmatch lesson with the built-in authorized demos.
+  await page.locator('.demo-button[data-deck="a"]').click();
+  await page.locator('.demo-button[data-deck="b"]').click();
+  await page.waitForFunction(() => document.querySelector('#audio-a')?.src && document.querySelector('#audio-b')?.src);
+  await page.locator('#lesson-practice-start').click();
+  check('Clase inicia en verificación', (await page.locator('#auto-mix-step-title').textContent()).includes('PASO 1'));
+  await page.locator('#auto-mix-next').click();
+  await page.locator('[data-pitch="b"]').evaluate(input => { input.value = '-3.2'; input.dispatchEvent(new Event('input', { bubbles: true })); });
+  await page.locator('#auto-mix-next').click();
+  check('Clase solicita alinear fase', (await page.locator('#auto-mix-step-title').textContent()).includes('PASO 3'));
+  check('JOG aparece durante el paso de fase', await page.locator('#lesson-jog-controls').isVisible());
+  await page.evaluate(async () => {
+    for (const id of ['a', 'b']) {
+      const audio = document.querySelector(`#audio-${id}`);
+      audio.pause();
+      audio.currentTime = 0.5;
+    }
+  });
+  await page.waitForTimeout(100);
+  await page.locator('#lesson-jog-back').click();
+  const joggedTime = await page.locator('#audio-b').evaluate(audio => audio.currentTime);
+  check('JOG B retrasa aproximadamente 25 ms', Math.abs(joggedTime - 0.475) < 0.008, `${joggedTime.toFixed(3)} s`);
+  await page.locator('#auto-mix-next').click();
+  check('Clase pasa a preparar', (await page.locator('#auto-mix-step-title').textContent()).includes('PASO 4'));
+  await page.locator('#crossfader').evaluate(input => { input.value = '0'; input.dispatchEvent(new Event('input', { bubbles: true })); });
+  await page.locator('#auto-mix-next').click();
+  check('Clase pasa al crossfade manual', (await page.locator('#auto-mix-step-title').textContent()).includes('PASO 5'));
+  await page.locator('#crossfader').evaluate(input => { input.value = '100'; input.dispatchEvent(new Event('input', { bubbles: true })); });
+  await page.locator('#auto-mix-next').click();
+  check('Clase práctica completa', (await page.locator('#auto-mix-step-title').textContent()).includes('COMPLETADO'));
 
   check('Sin errores de consola propios', consoleErrors.length === 0, consoleErrors.join(' | '));
   check('Sin pageerror', pageErrors.length === 0, pageErrors.join(' | '));
