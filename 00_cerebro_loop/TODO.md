@@ -13,7 +13,7 @@
 - [x] **C — Biblioteca local v1:** búsqueda por nombre, artista, fuente, BPM y etiquetas; filtros dedicados por fuente, estado de BPM y etiqueta; etiquetas por pista persistidas localmente; conteo, estado sin resultados y reinicio cubiertos por `./smoke.sh`.
 - [x] **C — Crates y setlists locales:** creación, selección, validación de nombre duplicado, añadir/reordenar/quitar pistas, resumen con duración total y persistencia local de IDs + metadatos (sin guardar archivos de audio); cubierto por `./smoke.sh`.
 - [ ] **C — Planificación de sets (siguiente ampliación):** continuar la narrativa de setlist con flujo de producción/energía, orden de temas y escenarios más avanzados; la base de metadatos y reordenación ya quedó implementada.
-- [~] **D — Herramientas DJ:** calculadora BPM educativa implementada y probada (pitch estimado, validación y rango ±8%). Pendiente: rueda Camelot y conteo de compases/frases con explicaciones educativas.
+- [x] **D — Herramientas DJ:** calculadora BPM (pitch estimado, validación y rango ±8%), rueda Camelot (24 tonalidades, relativa/vecina/salto de energía/cambio con riesgo) y conteo de compases/frases (1–64 compases, duración de compás y frase). Cubierto por `./smoke.sh`.
 - [ ] **E — Explorar:** crear índice curado y clasificado de recursos de aprendizaje; enlaces externos opcionales, nunca dependencias de funciones centrales.
 - [x] Investigación de 20 referencias y principios de implementación independiente, open source y local-first registrada en `COMPETITIVE_RESEARCH.md`.
 

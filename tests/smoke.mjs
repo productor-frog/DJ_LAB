@@ -40,7 +40,7 @@ try {
   check('Inicio abre con índice principal', await page.locator('#home').count() === 1 && await page.locator('#home-title').isVisible());
   check('Portal ofrece cinco áreas', await page.locator('.portal-card').count() === 5);
   check('Navegación a cabina y biblioteca', await page.locator('.top-nav a[href="#cabina"]').count() === 1 && await page.locator('.top-nav a[href="#biblioteca"]').count() === 1);
-  check('Herramientas BPM activas y Explorar sigue planificado', await page.locator('.portal-card[href="#herramientas"]').count() === 1 && await page.locator('.portal-card-planned').count() === 1 && (await page.locator('#recursos small').textContent()).includes('planificado'));
+  check('Herramientas activas y Explorar sigue planificado', await page.locator('.portal-card[href="#herramientas"]').count() === 1 && await page.locator('.portal-card-planned').count() === 1 && (await page.locator('#recursos small').textContent()).includes('planificado'));
   const bpmSource = page.locator('#bpm-source');
   const bpmTarget = page.locator('#bpm-target');
   const bpmResult = page.locator('#bpm-result');
@@ -62,6 +62,22 @@ try {
   const calculatorShotDir = '/tmp/opencode';
   fs.mkdirSync(calculatorShotDir, { recursive: true });
   await page.locator('#herramientas').screenshot({ path: `${calculatorShotDir}/bpm-calculator.jpg`, type: 'jpeg', quality: 60 });
+  check('Rueda Camelot ofrece 24 tonalidades', await page.locator('#key-source option').count() === 24 && await page.locator('#key-target option').count() === 24);
+  check('Camelot parte de la misma tonalidad', await page.locator('#key-verdict').textContent() === 'Misma tonalidad');
+  await page.locator('#key-target').selectOption('8B');
+  check('Camelot detecta tonalidad relativa', await page.locator('#key-verdict').textContent() === 'Relativa' && (await page.locator('#key-guidance').textContent()).includes('muy segura') && !await page.locator('#key-result').evaluate(element => element.classList.contains('is-out-of-range')));
+  await page.locator('#key-target').selectOption('9A');
+  check('Camelot detecta vecina en la rueda', await page.locator('#key-verdict').textContent() === 'Vecina en la rueda');
+  await page.locator('#key-target').selectOption('3B');
+  check('Camelot advierte un cambio lejano', await page.locator('#key-verdict').textContent() === 'Cambio con riesgo' && await page.locator('#key-result').evaluate(element => element.classList.contains('is-out-of-range')));
+  await page.locator('#phrase-bpm').fill('124');
+  await page.locator('#phrase-bars').fill('8');
+  check('Fraseo calcula 8 compases a 124 BPM', await page.locator('#phrase-duration').textContent() === '15.5 s' && (await page.locator('#phrase-guidance').textContent()).includes('1 compás'));
+  await page.locator('#phrase-bars').fill('0');
+  check('Fraseo rechaza compases inválidos', await page.locator('#phrase-duration').textContent() === 'Compases no válidos');
+  await page.locator('#phrase-bars').fill('8');
+  await page.locator('#phrase-bpm').fill('401');
+  check('Fraseo rechaza BPM fuera de 20–400', await page.locator('#phrase-duration').textContent() === 'BPM no válido');
   await page.locator('.portal-card[href="#cabina"]').click();
   check('Portal navega a cabina sin quitar la cabina del DOM', page.url().endsWith('#cabina') && await page.locator('#audio-a').count() === 1);
   for (const width of [390, 320]) {

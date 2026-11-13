@@ -1173,6 +1173,109 @@
   $('#bpm-source').addEventListener('input', updateBpmTool);
   $('#bpm-target').addEventListener('input', updateBpmTool);
   updateBpmTool();
+
+  const CAMELOT_KEYS = [
+    ['1A', 'Ab menor'], ['2A', 'Eb menor'], ['3A', 'Bb menor'], ['4A', 'F menor'],
+    ['5A', 'C menor'], ['6A', 'G menor'], ['7A', 'D menor'], ['8A', 'A menor'],
+    ['9A', 'E menor'], ['10A', 'B menor'], ['11A', 'F# menor'], ['12A', 'C# menor'],
+    ['1B', 'B mayor'], ['2B', 'F# mayor'], ['3B', 'Db mayor'], ['4B', 'Ab mayor'],
+    ['5B', 'Eb mayor'], ['6B', 'Bb mayor'], ['7B', 'F mayor'], ['8B', 'C mayor'],
+    ['9B', 'G mayor'], ['10B', 'D mayor'], ['11B', 'A mayor'], ['12B', 'E mayor']
+  ];
+  const camelotName = code => CAMELOT_KEYS.find(([key]) => key === code)?.[1] || code;
+  const camelotNumber = code => Number(String(code).replace(/[AB]$/, ''));
+  const camelotLetter = code => String(code).slice(-1);
+
+  function populateCamelotSelect(element, selected) {
+    if (!element) return;
+    element.textContent = '';
+    for (const [code, name] of CAMELOT_KEYS) {
+      const option = document.createElement('option');
+      option.value = code;
+      option.textContent = `${code} · ${name}`;
+      option.selected = code === selected;
+      element.append(option);
+    }
+  }
+
+  function describeCamelot(source, target) {
+    if (!source || !target) return { verdict: '—', guidance: 'Elige dos tonalidades.', risk: false };
+    const sourceNumber = camelotNumber(source);
+    const targetNumber = camelotNumber(target);
+    if (!Number.isFinite(sourceNumber) || !Number.isFinite(targetNumber)) {
+      return { verdict: 'Tonalidad no válida', guidance: 'Elige claves de la rueda Camelot.', risk: false };
+    }
+    const difference = Math.abs(sourceNumber - targetNumber);
+    const distance = Math.min(difference, 12 - difference);
+    const sameLetter = camelotLetter(source) === camelotLetter(target);
+    if (source === target) {
+      return { verdict: 'Misma tonalidad', guidance: `${camelotName(source)} con ${camelotName(target)}: mezcla directa, sin choque armónico.`, risk: false };
+    }
+    if (distance === 0 && !sameLetter) {
+      return { verdict: 'Relativa', guidance: `${camelotName(source)} y ${camelotName(target)} comparten notas: transición muy segura.`, risk: false };
+    }
+    if (distance === 1 && sameLetter) {
+      return { verdict: 'Vecina en la rueda', guidance: `Un paso entre ${source} y ${target}: cambio suave, mantiene la energía.`, risk: false };
+    }
+    if (distance === 2 && sameLetter) {
+      return { verdict: 'Dos pasos', guidance: `A dos posiciones, ${source} → ${target} funciona con cuidado; puede notarse el cambio.`, risk: false };
+    }
+    if (sameLetter && (targetNumber - sourceNumber + 12) % 12 === 7) {
+      return { verdict: 'Salto de energía', guidance: `${source} → ${target} sube una quinta: compatible y con más impulso.`, risk: false };
+    }
+    return { verdict: 'Cambio con riesgo', guidance: `${camelotName(source)} y ${camelotName(target)} están lejos en la rueda: prueba en un break o busca otra pista.`, risk: true };
+  }
+
+  function updateCamelotTool() {
+    const sourceSelect = $('#key-source');
+    const targetSelect = $('#key-target');
+    const result = $('#key-result');
+    const verdict = $('#key-verdict');
+    const guidance = $('#key-guidance');
+    if (!sourceSelect || !targetSelect || !result || !verdict || !guidance) return;
+    const description = describeCamelot(sourceSelect.value, targetSelect.value);
+    verdict.textContent = description.verdict;
+    guidance.textContent = description.guidance;
+    result.classList.toggle('is-out-of-range', description.risk);
+  }
+
+  populateCamelotSelect($('#key-source'), '8A');
+  populateCamelotSelect($('#key-target'), '8A');
+  $('#key-source')?.addEventListener('change', updateCamelotTool);
+  $('#key-target')?.addEventListener('change', updateCamelotTool);
+  updateCamelotTool();
+
+  function updatePhraseTool() {
+    const bpmInput = $('#phrase-bpm');
+    const barsInput = $('#phrase-bars');
+    const result = $('#phrase-result');
+    const duration = $('#phrase-duration');
+    const guidance = $('#phrase-guidance');
+    if (!bpmInput || !barsInput || !result || !duration || !guidance) return;
+    const bpm = Number(bpmInput.value);
+    const bars = Number(barsInput.value);
+    if (!Number.isFinite(bpm) || bpm < 20 || bpm > 400) {
+      duration.textContent = 'BPM no válido';
+      guidance.textContent = 'Introduce un BPM entre 20 y 400.';
+      result.classList.add('is-out-of-range');
+      return;
+    }
+    if (!Number.isInteger(bars) || bars < 1 || bars > 64) {
+      duration.textContent = 'Compases no válidos';
+      guidance.textContent = 'Introduce entre 1 y 64 compases por frase.';
+      result.classList.add('is-out-of-range');
+      return;
+    }
+    const barSeconds = (4 * 60) / bpm;
+    const phraseSeconds = barSeconds * bars;
+    duration.textContent = `${phraseSeconds.toFixed(1)} s`;
+    guidance.textContent = `${bars} compases de 4 tiempos a ${bpm} BPM (1 compás = ${barSeconds.toFixed(2)} s).`;
+    result.classList.remove('is-out-of-range');
+  }
+
+  $('#phrase-bpm')?.addEventListener('input', updatePhraseTool);
+  $('#phrase-bars')?.addEventListener('input', updatePhraseTool);
+  updatePhraseTool();
   $('#crate-create-form').addEventListener('submit', event => {
     event.preventDefault();
     const input = $('#crate-name');
