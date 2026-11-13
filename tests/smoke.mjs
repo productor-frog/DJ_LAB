@@ -76,6 +76,35 @@ try {
     check(`MP3 disponible: ${track.name}`, audioResponse.status() === 200 && (audioResponse.headers()['content-type'] || '').startsWith('audio/'), `${audioResponse.status()} ${audioResponse.headers()['content-type'] || ''}`);
   }
 
+  const crateSelect = page.locator('#crate-select');
+  check('Crates inicia con estado vacío', await page.locator('#setlist-summary').textContent() === '0 pistas · 00:00' && (await page.locator('#setlist-tracks').textContent()).includes('Crea un crate'));
+  await page.locator('#crate-name').fill('Warm-up');
+  await page.locator('#crate-create-form button[type="submit"]').click();
+  check('Crear crate lo selecciona y muestra setlist vacío', await crateSelect.locator('option').count() === 2 && await crateSelect.locator('option:checked').textContent() === 'Warm-up' && (await page.locator('#setlist-tracks').textContent()).includes('Crate vacío'));
+  await page.locator('#crate-name').fill('warm-UP');
+  await page.locator('#crate-create-form button[type="submit"]').click();
+  check('Crates con nombres duplicados se rechazan', await crateSelect.locator('option').count() === 2 && (await page.locator('#toast').textContent()).includes('Ya existe'));
+  await page.locator('#crate-name').fill('Closing');
+  await page.locator('#crate-create-form button[type="submit"]').click();
+  const closingCrateId = await crateSelect.inputValue();
+  await crateSelect.selectOption({ label: 'Warm-up' });
+  check('Se puede seleccionar otro crate', await crateSelect.locator('option:checked').textContent() === 'Warm-up' && (await page.locator('#setlist-tracks').textContent()).includes('Crate vacío'));
+  for (const trackName of [repositoryTracks[0].name, repositoryTracks[1].name]) {
+    await page.locator('#library-body tr').filter({ hasText: trackName }).getByRole('button', { name: `Añadir ${trackName} al setlist` }).click();
+  }
+  check('Añadir desde biblioteca actualiza setlist y resumen', await page.locator('#setlist-tracks .setlist-item').count() === 2 && await page.locator('#setlist-summary').textContent() === '2 pistas · 09:15');
+  await page.locator('#setlist-tracks').getByRole('button', { name: `Bajar ${repositoryTracks[0].name} en el set` }).click();
+  check('Se puede reordenar una pista del setlist', await page.locator('#setlist-tracks .setlist-item .setlist-track-copy strong').allTextContents().then(names => names[0] === repositoryTracks[1].name && names[1] === repositoryTracks[0].name));
+  const savedCrates = await page.evaluate(() => JSON.parse(localStorage.getItem('djlab-crates-v1') || '[]'));
+  check('Crates guardan solo IDs y metadatos de pistas', savedCrates.length === 2 && savedCrates.every(crate => Object.keys(crate).sort().join(',') === 'id,name,trackIds' && crate.trackIds.every(id => typeof id === 'string')) && savedCrates.find(crate => crate.name === 'Warm-up')?.trackIds.length === 2);
+  await page.reload({ waitUntil: 'networkidle' });
+  check('Crate, orden y setlist persisten al recargar', await page.locator('#crate-select option:checked').textContent() === 'Warm-up' && await page.locator('#setlist-tracks .setlist-item .setlist-track-copy strong').allTextContents().then(names => names[0] === repositoryTracks[1].name && names[1] === repositoryTracks[0].name));
+  await page.locator('#setlist-tracks').getByRole('button', { name: `Quitar ${repositoryTracks[1].name} del set` }).click();
+  await page.locator('#setlist-tracks').getByRole('button', { name: `Quitar ${repositoryTracks[0].name} del set` }).click();
+  check('Quitar pistas deja el setlist en estado vacío', await page.locator('#setlist-tracks .setlist-item').count() === 0 && await page.locator('#setlist-summary').textContent() === '0 pistas · 00:00' && (await page.locator('#setlist-tracks').textContent()).includes('Crate vacío'));
+  await page.locator('#crate-select').selectOption(closingCrateId);
+  check('Un crate nuevo seleccionado también muestra estado vacío', (await page.locator('#setlist-tracks').textContent()).includes('Crate vacío'));
+
   const firstTrackTags = page.locator('#library-body tr').nth(0).locator('.library-tags-input');
   await firstTrackTags.fill('warm-up, house');
   await firstTrackTags.dispatchEvent('change');

@@ -4,6 +4,7 @@
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
   const STORAGE_KEY = 'djlab-library-v1';
+  const CRATES_KEY = 'djlab-crates-v1';
   const MIDI_MAP_KEY = 'djlab-midi-map-v1';
   const MIDI_TARGETS = ['play-a', 'play-b', 'cue-a', 'cue-b', 'sync-a', 'sync-b', 'volume-a', 'volume-b', 'pitch-a', 'pitch-b', 'eq-a-low', 'eq-a-mid', 'eq-a-high', 'eq-b-low', 'eq-b-mid', 'eq-b-high', 'crossfader', 'jog-a', 'jog-b'];
   const MIDI_LABELS = Object.fromEntries([...$('#midi-target-select')?.options || []].map(option => [option.value, option.textContent]));
@@ -38,6 +39,8 @@
     ...savedLibrary.filter(track => !REPO_TRACKS.some(repositoryTrack => repositoryTrack.id === track.id))
   ];
   const midiButtonStates = new Map();
+  let crates = loadCrates();
+  let activeCrateId = crates[0]?.id || '';
 
   function normalizeLibraryTrack(item) {
     if (!item || typeof item !== 'object' || Array.isArray(item)) return null;
@@ -65,6 +68,25 @@
       const value = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
       return Array.isArray(value) ? value.map(normalizeLibraryTrack).filter(Boolean).slice(0, 100) : [];
     } catch { return []; }
+  }
+
+  function loadCrates() {
+    try {
+      const value = JSON.parse(localStorage.getItem(CRATES_KEY) || '[]');
+      if (!Array.isArray(value)) return [];
+      return value.slice(0, 30).flatMap(crate => {
+        if (!crate || typeof crate !== 'object' || typeof crate.name !== 'string' || !crate.name.trim() || crate.name.length > 60 || typeof crate.id !== 'string') return [];
+        const trackIds = Array.isArray(crate.trackIds)
+          ? [...new Set(crate.trackIds.filter(id => typeof id === 'string' && library.some(track => track.id === id)))].slice(0, 100)
+          : [];
+        return [{ id: crate.id.slice(0, 100), name: crate.name.trim(), trackIds }];
+      });
+    } catch { return []; }
+  }
+
+  function persistCrates() {
+    try { localStorage.setItem(CRATES_KEY, JSON.stringify(crates)); }
+    catch { toast('No se pudieron guardar tus crates en este navegador.'); }
   }
 
   function loadMidiMap() {
@@ -695,7 +717,105 @@
     clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('visible'), 2300);
   }
 
+  function activeCrate() { return crates.find(crate => crate.id === activeCrateId) || null; }
+
+  function renderCrates() {
+    const validTrackIds = new Set(library.map(track => track.id));
+    let cratesChanged = false;
+    for (const crate of crates) {
+      const validIds = crate.trackIds.filter(id => validTrackIds.has(id));
+      if (validIds.length !== crate.trackIds.length) {
+        crate.trackIds = validIds;
+        cratesChanged = true;
+      }
+    }
+    if (cratesChanged) persistCrates();
+
+    const select = $('#crate-select');
+    const currentId = activeCrateId;
+    select.replaceChildren(new Option(crates.length ? 'Selecciona un crate' : 'Crea tu primer crate', ''));
+    for (const crate of crates) select.add(new Option(crate.name, crate.id));
+    if (crates.some(crate => crate.id === currentId)) select.value = currentId;
+    else activeCrateId = select.value = crates[0]?.id || '';
+
+    const crate = activeCrate();
+    const list = $('#setlist-tracks');
+    if (!crate) {
+      $('#setlist-summary').textContent = '0 pistas · 00:00';
+      list.replaceChildren(Object.assign(document.createElement('li'), { className: 'playlist-empty', textContent: 'Crea un crate y añade pistas desde la biblioteca para planificar tu set.' }));
+      return;
+    }
+    const tracks = crate.trackIds.map(id => library.find(track => track.id === id)).filter(Boolean);
+    const totalSeconds = tracks.reduce((sum, track) => sum + (Number(track.duration) || 0), 0);
+    $('#setlist-summary').textContent = `${tracks.length} ${tracks.length === 1 ? 'pista' : 'pistas'} · ${formatTime(totalSeconds)}`;
+    if (!tracks.length) {
+      list.replaceChildren(Object.assign(document.createElement('li'), { className: 'playlist-empty', textContent: 'Crate vacío. Usa + en una pista de la biblioteca para añadirla al setlist.' }));
+      return;
+    }
+    list.replaceChildren(...tracks.map((track, index) => {
+      const item = document.createElement('li'); item.className = 'setlist-item';
+      const position = document.createElement('span'); position.className = 'setlist-position'; position.textContent = String(index + 1).padStart(2, '0');
+      const details = document.createElement('span'); details.className = 'setlist-track-copy';
+      const title = document.createElement('strong'); title.textContent = track.name;
+      const meta = document.createElement('small'); meta.textContent = `${track.bpm ? `${Number(track.bpm).toFixed(1)} BPM` : 'BPM pendiente'} · ${formatTime(track.duration || 0)}`;
+      details.append(title, meta);
+      const controls = document.createElement('span'); controls.className = 'setlist-item-actions';
+      const up = document.createElement('button'); up.type = 'button'; up.textContent = '↑'; up.title = 'Subir en el set'; up.setAttribute('aria-label', `Subir ${track.name} en el set`); up.disabled = index === 0;
+      up.addEventListener('click', () => moveSetlistTrack(index, -1));
+      const down = document.createElement('button'); down.type = 'button'; down.textContent = '↓'; down.title = 'Bajar en el set'; down.setAttribute('aria-label', `Bajar ${track.name} en el set`); down.disabled = index === tracks.length - 1;
+      down.addEventListener('click', () => moveSetlistTrack(index, 1));
+      const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = '×'; remove.title = 'Quitar del set'; remove.setAttribute('aria-label', `Quitar ${track.name} del set`);
+      remove.addEventListener('click', () => removeTrackFromCrate(track.id));
+      controls.append(up, down, remove);
+      item.append(position, details, controls);
+      return item;
+    }));
+  }
+
+  function createCrate(name) {
+    const normalizedName = name.trim().replace(/\s+/g, ' ');
+    if (!normalizedName) { toast('Escribe un nombre para el crate.'); return false; }
+    if (crates.length >= 30) { toast('Puedes guardar hasta 30 crates.'); return false; }
+    if (crates.some(crate => crate.name.toLocaleLowerCase() === normalizedName.toLocaleLowerCase())) {
+      toast('Ya existe un crate con ese nombre.');
+      return false;
+    }
+    const id = `crate-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    crates.push({ id, name: normalizedName.slice(0, 60), trackIds: [] });
+    activeCrateId = id;
+    persistCrates();
+    renderCrates();
+    toast(`Crate «${normalizedName}» creado.`);
+    return true;
+  }
+
+  function addTrackToCrate(trackId) {
+    const crate = activeCrate();
+    if (!crate) { toast('Crea o selecciona un crate antes de añadir pistas.'); return; }
+    if (crate.trackIds.includes(trackId)) { toast('Esta pista ya está en el setlist.'); return; }
+    if (crate.trackIds.length >= 100) { toast('El setlist admite hasta 100 pistas.'); return; }
+    crate.trackIds.push(trackId);
+    persistCrates(); renderCrates();
+    toast('Pista añadida al setlist.');
+  }
+
+  function moveSetlistTrack(index, direction) {
+    const crate = activeCrate();
+    const next = index + direction;
+    if (!crate || next < 0 || next >= crate.trackIds.length) return;
+    [crate.trackIds[index], crate.trackIds[next]] = [crate.trackIds[next], crate.trackIds[index]];
+    persistCrates(); renderCrates();
+  }
+
+  function removeTrackFromCrate(trackId) {
+    const crate = activeCrate();
+    if (!crate) return;
+    crate.trackIds = crate.trackIds.filter(id => id !== trackId);
+    persistCrates(); renderCrates();
+  }
+
   function renderLibrary() {
+    renderCrates();
     const body = $('#library-body');
     const tagSelect = $('#library-tag-filter');
     const availableTags = [...new Set(library.flatMap(track => track.tags || []))].sort((a, b) => a.localeCompare(b));
@@ -752,7 +872,9 @@
       const loadA = document.createElement('button'); loadA.className = 'table-load'; loadA.textContent = 'A'; loadA.title = 'Cargar en Deck A';
       const loadB = document.createElement('button'); loadB.className = 'table-load'; loadB.textContent = 'B'; loadB.title = 'Cargar en Deck B';
       loadA.addEventListener('click', () => loadLibraryTrack(track, 'a')); loadB.addEventListener('click', () => loadLibraryTrack(track, 'b'));
-      action.append(loadA, document.createTextNode(' '), loadB); row.append(name, duration, bpm, source, tagsCell, action); return row;
+      const addToSet = document.createElement('button'); addToSet.className = 'table-load setlist-add'; addToSet.textContent = '+'; addToSet.title = 'Añadir al crate activo'; addToSet.setAttribute('aria-label', `Añadir ${track.name} al setlist`);
+      addToSet.addEventListener('click', () => addTrackToCrate(track.id));
+      action.append(loadA, document.createTextNode(' '), loadB, document.createTextNode(' '), addToSet); row.append(name, duration, bpm, source, tagsCell, action); return row;
     }));
   }
 
@@ -1027,6 +1149,15 @@
   $('#midi-clear-maps').addEventListener('click', () => {
     for (const target of Object.keys(midiMap)) delete midiMap[target];
     persistMidiMap(); updateMidiLearnStatus(); toast('Asignaciones MIDI reiniciadas.');
+  });
+  $('#crate-create-form').addEventListener('submit', event => {
+    event.preventDefault();
+    const input = $('#crate-name');
+    if (createCrate(input.value)) input.value = '';
+  });
+  $('#crate-select').addEventListener('change', event => {
+    activeCrateId = event.target.value;
+    renderCrates();
   });
   $('#library-search').addEventListener('input', event => {
     libraryQuery = event.target.value;
