@@ -11,6 +11,17 @@
 - [~] Gauntlet visual/funcional frente a VirtualDJ: progreso y evidencia en `GAUNTLET_PROGRESS.md`. La primera pareja de capturas (1280×900) no es comparable: muestra la cabina de DJ Lab y la web promocional de VirtualDJ; crítico independiente no declara ganador. Criterio de éxito: comparar las interfaces reales en estados/tarea equivalentes, con revisión a ciegas, y continuar iterando hasta que DJ Lab gane.
 - [ ] Futuro (piano MIDI): soportar conexión del piano MIDI Arturia KeyLab Mini MK3 y crear una sección "aprender a tocar temas con el piano" (el usuario dispone del piano en casa). El controlador MIDI genérico queda pospuesto por no contar con el hardware. Criterio: detección WebMIDI del KeyLab, mapeo de teclas y guía de práctica por tema, sin descargar audio de YouTube.
 
+## 🧭 Producto educativo open source (backlog aceptado)
+- [ ] **A — Inicio índice:** cambiar el inicio predeterminado a un portal/índice con navegación a Aprender, Practicar/Cabina, Biblioteca, Planificar, Herramientas y Explorar/Recursos. La cabina deja de ser la página de inicio.
+- [ ] **B — Aprender y practicar:** crear una ruta progresiva desde cero y ejercicios guiados de beat, compás/frase, BPM, tonalidad, tempo/fase, EQ y transiciones, con feedback; mantener aparte la cabina libre.
+- [ ] **C — Biblioteca y sets:** ampliar organización local (búsqueda, filtros, etiquetas, crates/playlists) y planificación de setlists con los metadatos disponibles; guardar/importar/exportar metadatos sin subir audio.
+- [ ] **D — Herramientas para DJs:** desarrollar herramientas educativas propias como rueda Camelot, ayudas de BPM y conteo de compases/frases, explicando las recomendaciones.
+- [ ] **E — Recursos y exploración:** crear un directorio curado de tutoriales, teoría, géneros, equipos/software y recursos comunitarios, clasificado por nivel y tema.
+- [x] Registrar benchmark funcional de 20 referencias y el alcance open source/local-first en `COMPETITIVE_RESEARCH.md`.
+- [ ] Investigar análisis local opcional de BPM/tonalidad/energía; distinguir estimaciones de metadatos confirmados y documentar dependencias/licencias.
+
+**Principio de alcance:** aprender de funciones y flujos públicamente observables para construir alternativas independientes; no copiar código, marca o activos protegidos ni eludir suscripciones/controles de acceso. Las funciones centrales de DJ Lab no deben depender de suscripciones de terceros. No descargar ni enrutar audio de YouTube.
+
 ## 🛠️ Deuda Técnica y Mantenimiento (Tareas [C])
 - [x] Conservar el prompt reutilizable del Gauntlet Loop adaptado a DJ Lab, VirtualDJ y las reglas de AGENTS.md en `GAUNTLET_LOOP_PROMPT.md`.
 - [x] Añadir una prueba automatizada de humo en navegador para carga, decks y consola: `smoke.sh` / `tests/smoke.mjs` (Playwright), verifica HTTP 200, decks, controles y consola sin errores propios.
