@@ -76,7 +76,20 @@ try {
     check(`MP3 disponible: ${track.name}`, audioResponse.status() === 200 && (audioResponse.headers()['content-type'] || '').startsWith('audio/'), `${audioResponse.status()} ${audioResponse.headers()['content-type'] || ''}`);
   }
 
+  const firstTrackTags = page.locator('#library-body tr').nth(0).locator('.library-tags-input');
+  await firstTrackTags.fill('warm-up, house');
+  await firstTrackTags.dispatchEvent('change');
+  const secondTrackTags = page.locator('#library-body tr').nth(1).locator('.library-tags-input');
+  await secondTrackTags.fill('closing');
+  await secondTrackTags.dispatchEvent('change');
+  check('Etiquetas se editan por pista', await page.locator('#library-body .library-tags-input').nth(0).inputValue() === 'warm-up, house' && await page.locator('#library-body .library-tags-input').nth(1).inputValue() === 'closing');
+  check('Selector de etiquetas se actualiza dinámicamente', await page.locator('#library-tag-filter option').allTextContents().then(labels => labels.includes('warm-up') && labels.includes('house') && labels.includes('closing')));
+  await page.locator('#library-tag-filter').selectOption('warm-up');
+  check('Filtro por etiqueta filtra pistas y actualiza conteo', await page.locator('#library-body tr:not(.empty-row)').count() === 1 && (await page.locator('#library-count').textContent()).trim() === '1 de 4 pistas');
+  await page.locator('#library-tag-filter').selectOption('all');
   const librarySearch = page.locator('#library-search');
+  await librarySearch.fill('house');
+  check('Búsqueda incluye etiquetas', await page.locator('#library-body tr:not(.empty-row)').count() === 1 && (await page.locator('#library-count').textContent()).trim() === '1 de 4 pistas');
   await librarySearch.fill('biblioteca DJ Lab');
   check('Búsqueda filtra por artista y actualiza conteo', await page.locator('#library-body tr').count() === 4 && (await page.locator('#library-count').textContent()).trim() === '4 de 4 pistas');
   await librarySearch.fill('ULTRAVIOLET');
@@ -85,6 +98,22 @@ try {
   check('Búsqueda sin resultados muestra estado vacío y conteo cero', await page.locator('#library-body .empty-row strong').textContent() === 'No hay coincidencias' && (await page.locator('#library-count').textContent()).trim() === '0 de 4 pistas');
   await librarySearch.fill('');
   check('Limpiar búsqueda restaura biblioteca completa', await page.locator('#library-body tr').count() === 4 && (await page.locator('#library-count').textContent()).trim() === '4 pistas');
+  await page.reload({ waitUntil: 'networkidle' });
+  check('Etiquetas se conservan al recargar la biblioteca', await page.locator('#library-body .library-tags-input').nth(0).inputValue() === 'warm-up, house' && await page.locator('#library-body .library-tags-input').nth(1).inputValue() === 'closing');
+  await page.locator('#library-source-filter').selectOption('Demo');
+  check('Filtro dedicado Demo no muestra pistas locales', await page.locator('#library-count').textContent() === '0 de 4 pistas');
+  await page.locator('#library-source-filter').selectOption('Local');
+  check('Filtro dedicado Local conserva cuatro pistas', await page.locator('#library-body tr').count() === 4);
+  await page.locator('#library-bpm-filter').selectOption('known');
+  const knownBpmValues = await page.locator('#library-body tr:not(.empty-row) td:nth-child(3)').allTextContents();
+  check('Filtro BPM conocido muestra solo valores analizados', knownBpmValues.length === Number((await page.locator('#library-count').textContent()).match(/^(\d+)/)?.[1]) && knownBpmValues.every(value => Number(value) > 0));
+  await page.locator('#library-bpm-filter').selectOption('unknown');
+  const pendingBpmValues = await page.locator('#library-body tr:not(.empty-row) td:nth-child(3)').allTextContents();
+  check('Filtro BPM pendiente muestra solo pistas sin BPM', pendingBpmValues.length === Number((await page.locator('#library-count').textContent()).match(/^(\d+)/)?.[1]) && pendingBpmValues.every(value => value.trim() === '—'));
+  await page.locator('#library-filter-reset').click();
+  await page.locator('#library-tag-filter').selectOption('warm-up');
+  await page.locator('#library-filter-reset').click();
+  check('Limpiar filtros reinicia búsqueda y selectores', await page.locator('#library-search').inputValue() === '' && await page.locator('#library-source-filter').inputValue() === 'all' && await page.locator('#library-bpm-filter').inputValue() === 'all' && await page.locator('#library-tag-filter').inputValue() === 'all' && await page.locator('#library-body tr').count() === 4);
 
   const preloadedDecks = await page.evaluate(() => ['a', 'b'].map(id => ({
     id,

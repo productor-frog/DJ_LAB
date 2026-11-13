@@ -61,4 +61,17 @@ html{scroll-behavior:smooth;scroll-padding-top:20px}
 .library-search{display:block;width:min(100%,420px);height:40px;padding:0 12px;border:1px solid #2a2f3c;border-radius:7px;background:#0d1119;color:var(--text);font:12px var(--sans);outline:none;transition:border-color .18s ease,box-shadow .18s ease}
 .library-search::placeholder{color:#707888}
 .library-search:focus{border-color:#54e3dc99;box-shadow:0 0 0 3px #54e3dc18}
-@media(max-width:560px){.library-search{width:100%}}
+.library-filter-row{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:17px 0 14px}
+.library-control{display:flex;flex-direction:column;gap:7px;min-width:145px;color:#929aaa;font:8px var(--mono);letter-spacing:.8px}
+.library-control span{white-space:nowrap}
+.library-control input,.library-control select{height:40px;padding:0 12px;border:1px solid #2a2f3c;border-radius:7px;background:#0d1119;color:var(--text);font:12px var(--sans);outline:none}
+.library-query-control{flex:1 1 270px;max-width:420px}
+.library-control select{min-width:145px;cursor:pointer}
+.library-control input:focus,.library-control select:focus{border-color:#54e3dc99;box-shadow:0 0 0 3px #54e3dc18}
+.library-control input::placeholder{color:#707888}
+.library-reset{height:40px;padding:0 12px;border:1px solid #2a2f3c;border-radius:7px;background:transparent;color:#aab1bf;font:8px var(--mono);letter-spacing:.6px;cursor:pointer}
+.library-reset:hover{border-color:#54e3dc88;color:var(--cyan)}
+.library-tags-input{width:100%;min-width:145px;height:34px;padding:0 9px;border:1px solid #2a2f3c;border-radius:6px;background:#0d1119;color:var(--text);font:10px var(--sans);outline:none}
+.library-tags-input:focus{border-color:#54e3dc99;box-shadow:0 0 0 3px #54e3dc18}
+.library-tags-input::placeholder{color:#707888}
+@media(max-width:560px){.library-filter-row{align-items:stretch;gap:9px}.library-query-control{flex-basis:100%;max-width:none}.library-control{flex:1;min-width:calc(50% - 6px)}.library-control select{width:100%;min-width:0}.library-reset{flex:1}}

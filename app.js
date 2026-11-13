@@ -18,6 +18,9 @@
   const mixPlaylist = [...REPO_TRACKS];
   let audioContext;
   let libraryQuery = '';
+  let librarySourceFilter = 'all';
+  let libraryBpmFilter = 'all';
+  let libraryTagFilter = 'all';
   let crossPosition = 0.5;
   let toastTimer;
   let midiAccess;
@@ -27,7 +30,11 @@
   const midiMap = loadMidiMap();
   const savedLibrary = loadSavedLibrary();
   const library = [
-    ...REPO_TRACKS.map(normalizeLibraryTrack).filter(Boolean),
+    ...REPO_TRACKS.map(track => {
+      const base = normalizeLibraryTrack(track);
+      const saved = savedLibrary.find(item => item.id === track.id);
+      return saved ? { ...base, ...saved } : base;
+    }).filter(Boolean),
     ...savedLibrary.filter(track => !REPO_TRACKS.some(repositoryTrack => repositoryTrack.id === track.id))
   ];
   const midiButtonStates = new Map();
@@ -44,10 +51,12 @@
     if ((bpm !== null && (!Number.isFinite(bpm) || bpm < 20 || bpm > 400)) || !Number.isFinite(duration) || duration < 0 || duration > 86400) return null;
     if (item.artist != null && (typeof item.artist !== 'string' || item.artist.length > 160)) return null;
     if (item.id != null && (typeof item.id !== 'string' || item.id.length > 100)) return null;
+    if (item.tags != null && (!Array.isArray(item.tags) || item.tags.length > 50 || item.tags.some(tag => typeof tag !== 'string'))) return null;
+    const tags = [...new Set((item.tags || []).map(tag => tag.trim().slice(0, 24)).filter(Boolean))].slice(0, 10);
     return {
       id: item.id || `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       name: item.name.trim(), artist: item.artist || (kind === 'demo' ? 'DJ Lab' : 'Audio local'),
-      bpm, duration, source, kind
+      bpm, duration, source, kind, tags
     };
   }
 
@@ -77,7 +86,7 @@
 
   function persistLibrary() {
     try {
-      const compact = library.map(({ id, name, artist, bpm, duration, source, kind }) => ({ id, name, artist, bpm, duration, source, kind }));
+      const compact = library.map(({ id, name, artist, bpm, duration, source, kind, tags }) => ({ id, name, artist, bpm, duration, source, kind, tags }));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(compact));
     } catch { toast('No se pudo guardar la biblioteca en este navegador.'); }
   }
@@ -182,6 +191,7 @@
     const entry = normalizeLibraryTrack({
       id: track.id || `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       name: track.name,
+      tags: library[existing]?.tags || [],
       artist: track.artist || (track.demo ? 'DJ Lab' : 'Audio local'),
       bpm: Number(track.bpm) || null,
       duration: Number(track.duration) || (track.demo ? 60 / (Number(track.bpm) || 120) * 16 : 0),
@@ -687,18 +697,32 @@
 
   function renderLibrary() {
     const body = $('#library-body');
+    const tagSelect = $('#library-tag-filter');
+    const availableTags = [...new Set(library.flatMap(track => track.tags || []))].sort((a, b) => a.localeCompare(b));
+    const selectedTag = libraryTagFilter;
+    tagSelect.replaceChildren(new Option('Todas', 'all'), ...availableTags.map(tag => new Option(tag, tag)));
+    if ([...tagSelect.options].some(option => option.value === selectedTag)) tagSelect.value = selectedTag;
+    else libraryTagFilter = tagSelect.value = 'all';
     const normalizedQuery = libraryQuery.trim().toLocaleLowerCase();
-    const matchingTracks = library.filter(track => [track.name, track.artist, track.source, track.bpm].some(value => String(value ?? '').toLocaleLowerCase().includes(normalizedQuery)));
+    const matchingTracks = library.filter(track => {
+      const matchesQuery = [track.name, track.artist, track.source, track.bpm, ...(track.tags || [])].some(value => String(value ?? '').toLocaleLowerCase().includes(normalizedQuery));
+      const matchesSource = librarySourceFilter === 'all' || track.source === librarySourceFilter;
+      const hasBpm = Number.isFinite(Number(track.bpm)) && Number(track.bpm) > 0;
+      const matchesBpm = libraryBpmFilter === 'all' || (libraryBpmFilter === 'known' ? hasBpm : !hasBpm);
+      const matchesTag = libraryTagFilter === 'all' || (track.tags || []).includes(libraryTagFilter);
+      return matchesQuery && matchesSource && matchesBpm && matchesTag;
+    });
     const visibleTracks = matchingTracks.slice(0, 20);
-    $('#library-count').textContent = normalizedQuery
+    const hasActiveFilters = normalizedQuery || librarySourceFilter !== 'all' || libraryBpmFilter !== 'all' || libraryTagFilter !== 'all';
+    $('#library-count').textContent = hasActiveFilters
       ? `${matchingTracks.length} de ${library.length} pistas`
       : `${library.length} ${library.length === 1 ? 'pista' : 'pistas'}`;
     if (!library.length) {
-      body.innerHTML = '<tr class="empty-row"><td colspan="5"><span>♫</span><strong>Tu biblioteca empieza acá</strong><small>Inicia una demo o carga archivos de audio desde tu dispositivo.</small></td></tr>';
+      body.innerHTML = '<tr class="empty-row"><td colspan="6"><span>♫</span><strong>Tu biblioteca empieza acá</strong><small>Inicia una demo o carga archivos de audio desde tu dispositivo.</small></td></tr>';
       return;
     }
     if (!matchingTracks.length) {
-      body.innerHTML = '<tr class="empty-row"><td colspan="5"><span>⌕</span><strong>No hay coincidencias</strong><small>Prueba con otro nombre, artista o fuente.</small></td></tr>';
+      body.innerHTML = '<tr class="empty-row"><td colspan="6"><span>⌕</span><strong>No hay coincidencias</strong><small>Prueba otros términos o limpia los filtros.</small></td></tr>';
       return;
     }
     body.replaceChildren(...visibleTracks.map(track => {
@@ -708,11 +732,27 @@
       const duration = document.createElement('td'); duration.textContent = formatTime(track.duration || 0);
       const bpm = document.createElement('td'); bpm.textContent = track.bpm ? Number(track.bpm).toFixed(1) : '—';
       const source = document.createElement('td'); source.textContent = track.source || 'Local';
+      const tagsCell = document.createElement('td');
+      const tagsInput = document.createElement('input');
+      tagsInput.className = 'library-tags-input';
+      tagsInput.type = 'text';
+      tagsInput.value = (track.tags || []).join(', ');
+      tagsInput.maxLength = 250;
+      tagsInput.setAttribute('aria-label', `Etiquetas de ${track.name}`);
+      tagsInput.placeholder = 'p. ej. warm-up, house';
+      tagsInput.addEventListener('change', () => {
+        const tags = [...new Set(tagsInput.value.split(',').map(tag => tag.trim().slice(0, 24)).filter(Boolean))].slice(0, 10);
+        track.tags = tags;
+        tagsInput.value = tags.join(', ');
+        persistLibrary();
+        renderLibrary();
+      });
+      tagsCell.append(tagsInput);
       const action = document.createElement('td');
       const loadA = document.createElement('button'); loadA.className = 'table-load'; loadA.textContent = 'A'; loadA.title = 'Cargar en Deck A';
       const loadB = document.createElement('button'); loadB.className = 'table-load'; loadB.textContent = 'B'; loadB.title = 'Cargar en Deck B';
       loadA.addEventListener('click', () => loadLibraryTrack(track, 'a')); loadB.addEventListener('click', () => loadLibraryTrack(track, 'b'));
-      action.append(loadA, document.createTextNode(' '), loadB); row.append(name, duration, bpm, source, action); return row;
+      action.append(loadA, document.createTextNode(' '), loadB); row.append(name, duration, bpm, source, tagsCell, action); return row;
     }));
   }
 
@@ -990,6 +1030,29 @@
   });
   $('#library-search').addEventListener('input', event => {
     libraryQuery = event.target.value;
+    renderLibrary();
+  });
+  $('#library-source-filter').addEventListener('change', event => {
+    librarySourceFilter = event.target.value;
+    renderLibrary();
+  });
+  $('#library-bpm-filter').addEventListener('change', event => {
+    libraryBpmFilter = event.target.value;
+    renderLibrary();
+  });
+  $('#library-tag-filter').addEventListener('change', event => {
+    libraryTagFilter = event.target.value;
+    renderLibrary();
+  });
+  $('#library-filter-reset').addEventListener('click', () => {
+    libraryQuery = '';
+    librarySourceFilter = 'all';
+    libraryBpmFilter = 'all';
+    libraryTagFilter = 'all';
+    $('#library-search').value = '';
+    $('#library-source-filter').value = 'all';
+    $('#library-bpm-filter').value = 'all';
+    $('#library-tag-filter').value = 'all';
     renderLibrary();
   });
   $('#import-library-file').addEventListener('change', event => {

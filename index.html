@@ -115,8 +115,14 @@
       <section class="library-section" id="biblioteca">
         <div class="library-heading"><div><p class="eyebrow">TU COLECCIÓN</p><h2>Biblioteca <em>local</em></h2></div><div class="library-actions"><span id="library-count">0 pistas</span><label class="quiet-button import-button">↥ IMPORTAR<input id="import-library-file" type="file" accept="application/json,.json" aria-label="Importar biblioteca JSON"></label><button class="quiet-button" id="export-library" type="button">↧ EXPORTAR</button></div></div>
         <aside class="playlist-card" aria-label="Playlist para mezclar"><div class="playlist-heading"><span class="playlist-icon">♫</span><div class="playlist-copy"><strong>MEZCLA TU PLAYLIST AQUÍ</strong><small>Añade archivos de audio de tu dispositivo y asígnalos a Deck A o Deck B. Los archivos permanecen en este dispositivo.</small></div><label class="playlist-add">＋ AÑADIR AUDIOS<input id="playlist-files" type="file" accept="audio/*" multiple aria-label="Añadir archivos de audio a tu playlist"></label></div><ul id="mix-playlist" class="mix-playlist" aria-live="polite"><li class="playlist-empty">Aún no hay pistas. Añade archivos de audio para empezar a mezclar.</li></ul></aside>
-        <label class="library-search-label" for="library-search">BUSCAR PISTAS</label><input id="library-search" class="library-search" type="search" placeholder="Nombre, artista o fuente…" autocomplete="off">
-        <div class="library-table-wrap"><table><thead><tr><th>PISTA</th><th>DURACIÓN</th><th>BPM</th><th>FUENTE</th><th>ACCIÓN</th></tr></thead><tbody id="library-body"><tr class="empty-row"><td colspan="5"><span>♫</span><strong>Tu biblioteca empieza acá</strong><small>Inicia una demo o carga archivos de audio desde tu dispositivo.</small></td></tr></tbody></table></div>
+        <div class="library-filter-row">
+          <label class="library-control library-query-control"><span>BUSCAR PISTAS</span><input id="library-search" type="search" placeholder="Nombre, artista, fuente, BPM o etiqueta…" autocomplete="off"></label>
+          <label class="library-control"><span>FUENTE</span><select id="library-source-filter"><option value="all">Todas</option><option value="Local">Local</option><option value="Demo">Demo</option></select></label>
+          <label class="library-control"><span>ANÁLISIS BPM</span><select id="library-bpm-filter"><option value="all">Todos</option><option value="known">Con BPM</option><option value="unknown">Pendiente</option></select></label>
+          <label class="library-control"><span>ETIQUETA</span><select id="library-tag-filter"><option value="all">Todas</option></select></label>
+          <button class="library-reset" id="library-filter-reset" type="button">LIMPIAR FILTROS</button>
+        </div>
+        <div class="library-table-wrap"><table><thead><tr><th>PISTA</th><th>DURACIÓN</th><th>BPM</th><th>FUENTE</th><th>ETIQUETAS · SEPARADAS POR COMAS</th><th>ACCIÓN</th></tr></thead><tbody id="library-body"><tr class="empty-row"><td colspan="6"><span>♫</span><strong>Tu biblioteca empieza acá</strong><small>Inicia una demo o carga archivos de audio desde tu dispositivo.</small></td></tr></tbody></table></div>
         <p class="library-footnote"><span>◉</span> Biblioteca guardada solo en este dispositivo. Los archivos de audio no se copian ni se cargan.</p>
       </section>
 
