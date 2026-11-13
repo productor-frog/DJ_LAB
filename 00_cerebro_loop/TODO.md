@@ -9,7 +9,8 @@
 - [x] **A — Portal inicial v1:** implementado con navegación a Cabina, Beatmatching y Biblioteca local; las tarjetas de Herramientas DJ y Explorar, además de sus secciones de próximos pasos, están marcadas como planificadas. Verificado en `./smoke.sh`; quedan pendientes las áreas de producto B–E.
 - [ ] **B — Aprender (ampliación):** completar una ruta progresiva desde cero y prácticas guiadas de fundamentos, fraseo, BPM y tonalidad. La práctica guiada de beatmatching existente cubre tempo, fase, EQ y crossfade manual.
 - [x] **C — Biblioteca local v1:** búsqueda por nombre, artista, fuente, BPM y etiquetas; filtros dedicados por fuente, estado de BPM y etiqueta; etiquetas por pista persistidas localmente; conteo, estado sin resultados y reinicio cubiertos por `./smoke.sh`.
-- [ ] **C — Biblioteca (siguiente ampliación):** crates/playlists y planificación de setlists sobre metadatos locales; mantener el principio de no subir audio.
+- [x] **C — Crates y setlists locales:** creación, selección, validación de nombre duplicado, añadir/reordenar/quitar pistas, resumen con duración total y persistencia local de IDs + metadatos (sin guardar archivos de audio); cubierto por `./smoke.sh`.
+- [ ] **C — Planificación de sets (siguiente ampliación):** continuar la narrativa de setlist con flujo de producción/energía, orden de temas y escenarios más avanzados; la base de metadatos y reordenación ya quedó implementada.
 - [ ] **D — Herramientas DJ:** crear herramientas propias (p. ej., rueda Camelot, ayudas BPM y fraseo) con explicaciones educativas.
 - [ ] **E — Explorar:** crear índice curado y clasificado de recursos de aprendizaje; enlaces externos opcionales, nunca dependencias de funciones centrales.
 - [x] Investigación de 20 referencias y principios de implementación independiente, open source y local-first registrada en `COMPETITIVE_RESEARCH.md`.
