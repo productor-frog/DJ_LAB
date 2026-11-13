@@ -742,12 +742,14 @@
     const list = $('#setlist-tracks');
     if (!crate) {
       $('#setlist-summary').textContent = '0 pistas · 00:00';
+      updateSetPlan([]);
       list.replaceChildren(Object.assign(document.createElement('li'), { className: 'playlist-empty', textContent: 'Crea un crate y añade pistas desde la biblioteca para planificar tu set.' }));
       return;
     }
     const tracks = crate.trackIds.map(id => library.find(track => track.id === id)).filter(Boolean);
     const totalSeconds = tracks.reduce((sum, track) => sum + (Number(track.duration) || 0), 0);
     $('#setlist-summary').textContent = `${tracks.length} ${tracks.length === 1 ? 'pista' : 'pistas'} · ${formatTime(totalSeconds)}`;
+    updateSetPlan(tracks);
     if (!tracks.length) {
       list.replaceChildren(Object.assign(document.createElement('li'), { className: 'playlist-empty', textContent: 'Crate vacío. Usa + en una pista de la biblioteca para añadirla al setlist.' }));
       return;
@@ -770,6 +772,57 @@
       item.append(position, details, controls);
       return item;
     }));
+  }
+
+  function updateSetPlan(tracks) {
+    const plan = $('#setlist-plan');
+    const note = $('#setlist-plan-note');
+    if (!plan || !note) return;
+    plan.hidden = !tracks.length;
+    if (!tracks.length) { note.textContent = ''; return; }
+    const known = tracks.map(track => Number(track.bpm)).filter(bpm => Number.isFinite(bpm) && bpm > 0);
+    if (known.length < 2) {
+      note.textContent = 'Añade BPM a al menos dos pistas para revisar los saltos de tempo del set.';
+      return;
+    }
+    const min = Math.min(...known);
+    const max = Math.max(...known);
+    let maxJump = 0;
+    let jumpLabel = '';
+    for (let index = 1; index < tracks.length; index++) {
+      const previous = Number(tracks[index - 1].bpm);
+      const current = Number(tracks[index].bpm);
+      if (!Number.isFinite(previous) || previous <= 0 || !Number.isFinite(current) || current <= 0) continue;
+      const jump = Math.abs(current - previous);
+      if (jump > maxJump) {
+        maxJump = jump;
+        jumpLabel = `${previous.toFixed(1)} → ${current.toFixed(1)} BPM (${current - previous > 0 ? '+' : ''}${(current - previous).toFixed(1)})`;
+      }
+    }
+    note.textContent = maxJump > 8
+      ? `Rango ${min.toFixed(1)}–${max.toFixed(1)} BPM. Salto de tempo: ${jumpLabel}. Mezcla gradual o reordena.`
+      : `Rango ${min.toFixed(1)}–${max.toFixed(1)} BPM. Transiciones dentro de ±8 BPM.`;
+  }
+
+  function sortSetlistByBpm(direction) {
+    const crate = activeCrate();
+    if (!crate) { toast('Crea o selecciona un crate antes de ordenar.'); return; }
+    if (crate.trackIds.length < 2) { toast('Añade al menos dos pistas para ordenar.'); return; }
+    const bpmOf = id => {
+      const track = library.find(item => item.id === id);
+      const bpm = Number(track?.bpm);
+      return Number.isFinite(bpm) && bpm > 0 ? bpm : null;
+    };
+    crate.trackIds.sort((a, b) => {
+      const aBpm = bpmOf(a);
+      const bBpm = bpmOf(b);
+      if (aBpm === null && bBpm === null) return 0;
+      if (aBpm === null) return 1;
+      if (bBpm === null) return -1;
+      return direction === 'asc' ? aBpm - bBpm : bBpm - aBpm;
+    });
+    persistCrates(); renderCrates();
+    toast(`Setlist ordenado por BPM ${direction === 'asc' ? 'ascendente' : 'descendente'}.`);
   }
 
   function createCrate(name) {
@@ -1345,6 +1398,8 @@
     activeCrateId = event.target.value;
     renderCrates();
   });
+  $('#setlist-sort-bpm-up')?.addEventListener('click', () => sortSetlistByBpm('asc'));
+  $('#setlist-sort-bpm-down')?.addEventListener('click', () => sortSetlistByBpm('desc'));
   $('#library-search').addEventListener('input', event => {
     libraryQuery = event.target.value;
     renderLibrary();

@@ -155,6 +155,47 @@ try {
   check('Añadir desde biblioteca actualiza setlist y resumen', await page.locator('#setlist-tracks .setlist-item').count() === 2 && await page.locator('#setlist-summary').textContent() === '2 pistas · 09:15');
   await page.locator('#setlist-tracks').getByRole('button', { name: `Bajar ${repositoryTracks[0].name} en el set` }).click();
   check('Se puede reordenar una pista del setlist', await page.locator('#setlist-tracks .setlist-item .setlist-track-copy strong').allTextContents().then(names => names[0] === repositoryTracks[1].name && names[1] === repositoryTracks[0].name));
+  await page.locator('#crate-select').selectOption(closingCrateId);
+  await page.evaluate(() => {
+    const saved = JSON.parse(localStorage.getItem('djlab-library-v1') || '[]');
+    const seeds = [
+      { id: 'repo-003', name: '[432Hz] Neon Boulevard', artist: 'Audio local · biblioteca DJ Lab', bpm: 132, duration: 600, source: 'Local', kind: 'local' },
+      { id: 'repo-004', name: 'gris', artist: 'Audio local · biblioteca DJ Lab', bpm: 120, duration: 601, source: 'Local', kind: 'local' }
+    ];
+    const byId = new Map(saved.map(track => [track.id, track]));
+    for (const seed of seeds) byId.set(seed.id, { ...(byId.get(seed.id) || {}), ...seed });
+    localStorage.setItem('djlab-library-v1', JSON.stringify([...byId.values()]));
+  });
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.locator('#crate-select').selectOption(closingCrateId);
+  for (const trackName of [repositoryTracks[3].name, repositoryTracks[2].name]) {
+    await page.locator('#library-body tr').filter({ hasText: trackName }).getByRole('button', { name: `Añadir ${trackName} al setlist` }).click();
+  }
+  check('Planificación muestra rango y salto de tempo', (await page.locator('#setlist-plan-note').textContent()).includes('Rango 120.0–132.0 BPM') && (await page.locator('#setlist-plan-note').textContent()).includes('Salto de tempo'));
+  await page.locator('#setlist-sort-bpm-down').click();
+  check('Orden descendente por BPM', await page.locator('#setlist-tracks .setlist-item .setlist-track-copy strong').allTextContents().then(names => names[0] === repositoryTracks[2].name && names[1] === repositoryTracks[3].name));
+  await page.locator('#setlist-sort-bpm-up').click();
+  check('Orden ascendente por BPM', await page.locator('#setlist-tracks .setlist-item .setlist-track-copy strong').allTextContents().then(names => names[0] === repositoryTracks[3].name && names[1] === repositoryTracks[2].name));
+  await page.locator('#setlist-tracks').getByRole('button', { name: `Quitar ${repositoryTracks[2].name} del set` }).click();
+  await page.locator('#setlist-tracks').getByRole('button', { name: `Quitar ${repositoryTracks[3].name} del set` }).click();
+  await page.evaluate(() => {
+    const saved = JSON.parse(localStorage.getItem('djlab-library-v1') || '[]');
+    const seeds = [
+      { id: 'repo-003', name: '[432Hz] Neon Boulevard', artist: 'Audio local · biblioteca DJ Lab', bpm: 132, duration: 600, source: 'Local', kind: 'local' },
+      { id: 'repo-004', name: 'gris', artist: 'Audio local · biblioteca DJ Lab', bpm: 128, duration: 601, source: 'Local', kind: 'local' }
+    ];
+    const byId = new Map(saved.map(track => [track.id, track]));
+    for (const seed of seeds) byId.set(seed.id, { ...(byId.get(seed.id) || {}), ...seed });
+    localStorage.setItem('djlab-library-v1', JSON.stringify([...byId.values()]));
+  });
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.locator('#crate-select').selectOption(closingCrateId);
+  for (const trackName of [repositoryTracks[3].name, repositoryTracks[2].name]) {
+    await page.locator('#library-body tr').filter({ hasText: trackName }).getByRole('button', { name: `Añadir ${trackName} al setlist` }).click();
+  }
+  check('Planificación avisa cuando las transiciones quedan dentro de ±8 BPM', (await page.locator('#setlist-plan-note').textContent()).includes('Transiciones dentro de ±8 BPM'));
+  await page.locator('#setlist-tracks').getByRole('button', { name: `Quitar ${repositoryTracks[2].name} del set` }).click();
+  await page.locator('#setlist-tracks').getByRole('button', { name: `Quitar ${repositoryTracks[3].name} del set` }).click();
   const savedCrates = await page.evaluate(() => JSON.parse(localStorage.getItem('djlab-crates-v1') || '[]'));
   check('Crates guardan solo IDs y metadatos de pistas', savedCrates.length === 2 && savedCrates.every(crate => Object.keys(crate).sort().join(',') === 'id,name,trackIds' && crate.trackIds.every(id => typeof id === 'string')) && savedCrates.find(crate => crate.name === 'Warm-up')?.trackIds.length === 2);
   await page.reload({ waitUntil: 'networkidle' });
