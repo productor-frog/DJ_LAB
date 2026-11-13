@@ -12,9 +12,9 @@
 - [ ] Futuro (piano MIDI): soportar conexión del piano MIDI Arturia KeyLab Mini MK3 y crear una sección "aprender a tocar temas con el piano" (el usuario dispone del piano en casa). El controlador MIDI genérico queda pospuesto por no contar con el hardware. Criterio: detección WebMIDI del KeyLab, mapeo de teclas y guía de práctica por tema, sin descargar audio de YouTube.
 
 ## 🧭 Producto educativo open source (backlog aceptado)
-- [ ] **A — Inicio índice:** cambiar el inicio predeterminado a un portal/índice con navegación a Aprender, Practicar/Cabina, Biblioteca, Planificar, Herramientas y Explorar/Recursos. La cabina deja de ser la página de inicio.
-- [ ] **B — Aprender y practicar:** crear una ruta progresiva desde cero y ejercicios guiados de beat, compás/frase, BPM, tonalidad, tempo/fase, EQ y transiciones, con feedback; mantener aparte la cabina libre.
-- [ ] **C — Biblioteca y sets:** ampliar organización local (búsqueda, filtros, etiquetas, crates/playlists) y planificación de setlists con los metadatos disponibles; guardar/importar/exportar metadatos sin subir audio.
+- [x] **A — Inicio índice/portal (v1):** el inicio predeterminado presenta un índice con acceso a Cabina, Beatmatching y Biblioteca local; Herramientas DJ y Explorar se muestran claramente como planificadas. La cabina sigue disponible como sección y conserva su DOM e interacciones. Smoke test cubre portal, navegación y etiquetas de estado.
+- [ ] **B — Aprender y practicar (ampliación):** ya existe la clase guiada de beatmatching (tempo, fase, EQ y transición manual), pero falta una ruta progresiva completa desde cero con beat, compás/frase, BPM, tonalidad y ejercicios con feedback; mantener aparte la cabina libre.
+- [ ] **C — Biblioteca y sets (ampliación):** ya existe biblioteca local de metadatos con importación/exportación JSON y búsqueda instantánea sin distinguir mayúsculas por nombre, artista, fuente o BPM; se verifican conteo y estado sin resultados. Faltan filtros dedicados, etiquetas, crates/playlists y planificación de setlists. No subir audio.
 - [ ] **D — Herramientas para DJs:** desarrollar herramientas educativas propias como rueda Camelot, ayudas de BPM y conteo de compases/frases, explicando las recomendaciones.
 - [ ] **E — Recursos y exploración:** crear un directorio curado de tutoriales, teoría, géneros, equipos/software y recursos comunitarios, clasificado por nivel y tema.
 - [x] Registrar benchmark funcional de 20 referencias y el alcance open source/local-first en `COMPETITIVE_RESEARCH.md`.
