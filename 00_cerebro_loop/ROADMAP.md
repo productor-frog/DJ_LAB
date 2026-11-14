@@ -18,7 +18,7 @@
 - [x] **D — Herramientas para DJs:** calculadora educativa de pitch para igualar BPM, rueda Camelot de compatibilidad armónica y conteo de compases/frases, con explicaciones y validación (20–400 BPM, 1–64 compases); smoke de navegador cubre resultados, límites y cambios de tonalidad. Se pueden añadir más utilidades en el futuro sin reabrir el alcance base.
 - [x] **E — Recursos y exploración:** sección Explorar con seis rutas curadas por nivel (fundamentos, oído, técnica, armonía, preparación, energía) y tema; cada tarjeta enlaza a una práctica o herramienta interna. Sin enlaces externos ni dependencias para las funciones centrales. Smoke test cubre la sección y que todos los enlaces sean internos.
 - [x] Registrar benchmark funcional de 20 referencias y el alcance open source/local-first en `COMPETITIVE_RESEARCH.md`.
-- [ ] Investigar análisis local opcional de BPM/tonalidad/energía; distinguir estimaciones de metadatos confirmados y documentar dependencias/licencias.
+- [x] Investigación de análisis local opcional de BPM/tonalidad/energía registrada en `ANALISIS_LOCAL.md`: estado actual, límites, propuesta (procedencia/confianza del BPM, croma + perfiles Krumhansl, energía relativa por set), licencias y criterios de aceptación. La implementación queda fuera de esta iteración.
 
 **Principio de alcance:** aprender de funciones y flujos públicamente observables para construir alternativas independientes; no copiar código, marca o activos protegidos ni eludir suscripciones/controles de acceso. Las funciones centrales de DJ Lab no deben depender de suscripciones de terceros. No descargar ni enrutar audio de YouTube.
 
