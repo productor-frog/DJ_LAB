@@ -154,20 +154,23 @@
     if (slider) slider.value = value;
     if (!audioContext) return;
     // Equal-power curve: constant perceived loudness through the center.
-    decks.a.cross.gain.setTargetAtTime(Math.cos(crossPosition * Math.PI / 2), audioContext.currentTime, 0.015);
-    decks.b.cross.gain.setTargetAtTime(Math.sin(crossPosition * Math.PI / 2), audioContext.currentTime, 0.015);
+    decks.a?.cross?.gain?.setTargetAtTime(Math.cos(crossPosition * Math.PI / 2), audioContext.currentTime, 0.015);
+    decks.b?.cross?.gain?.setTargetAtTime(Math.sin(crossPosition * Math.PI / 2), audioContext.currentTime, 0.015);
   }
 
   function setPitch(id, value) {
     const deck = decks[id];
-    if (!deck) return;
+    if (!deck?.audio) return;
     deck.pitch = Number(value);
     const rate = 1 + deck.pitch / 100;
     deck.audio.playbackRate = rate;
     deck.bpm = deck.baseBpm * rate;
-    $(`#pitch-label-${id}`).textContent = `${deck.pitch >= 0 ? '+' : ''}${deck.pitch.toFixed(1)}%`;
-    $(`#pitch-read-${id}`).textContent = `${deck.pitch >= 0 ? '+' : ''}${deck.pitch.toFixed(1)}%`;
-    $(`#bpm-read-${id}`).textContent = deck.bpm.toFixed(1);
+    const pitchLabel = $(`#pitch-label-${id}`);
+    if (pitchLabel) pitchLabel.textContent = `${deck.pitch >= 0 ? '+' : ''}${deck.pitch.toFixed(1)}%`;
+    const pitchRead = $(`#pitch-read-${id}`);
+    if (pitchRead) pitchRead.textContent = `${deck.pitch >= 0 ? '+' : ''}${deck.pitch.toFixed(1)}%`;
+    const bpmRead = $(`#bpm-read-${id}`);
+    if (bpmRead) bpmRead.textContent = deck.bpm.toFixed(1);
     updatePhase();
   }
 
@@ -304,12 +307,14 @@
   function syncDeck(id) {
     ensureAudio();
     const deck = decks[id];
-    if (!deck) return;
-    const target = id === 'a' ? decks.b.bpm : decks.a.bpm;
+    const other = decks[id === 'a' ? 'b' : 'a'];
+    if (!deck?.audio || !other?.audio) return;
+    const target = other.bpm;
     deck.pitch = Math.max(-8, Math.min(8, (target / deck.baseBpm - 1) * 100));
-    $(`[data-pitch="${id}"]`).value = deck.pitch;
+    const pitchInput = $(`[data-pitch="${id}"]`);
+    if (pitchInput) pitchInput.value = deck.pitch;
     setPitch(id, deck.pitch);
-    if (decks.a.audio.src && decks.b.audio.src) {
+    if (decks.a?.audio?.src && decks.b?.audio?.src) {
       const master = decks.a.audio.currentTime || 0;
       deck.audio.currentTime = master;
     }
@@ -509,7 +514,7 @@
     ensureAudio();
     const a = decks.a, b = decks.b;
     const card = $('#score-card');
-    if (!a.audio.src || !b.audio.src) {
+    if (!a?.audio || !b?.audio || !a.audio.src || !b.audio.src) {
       card.className = 'score-card bad'; $('#score-title').textContent = 'FALTAN PISTAS';
       $('#score-message').textContent = 'Carga o inicia las demos en ambos decks.'; $('#score-value').textContent = '—';
       return { ready: false, bpmDifference: Infinity, phaseDifference: Infinity };
@@ -585,6 +590,11 @@
   async function runAutoMixStep(step) {
     if (!autoMix.active) return;
     const a = decks.a, b = decks.b;
+    if (!a?.audio || !b?.audio) {
+      toast('Carga o inicia las demos en ambos decks antes de la guía.');
+      stopAutoMix();
+      return;
+    }
     if (autoMix.mode === 'practice') $('#lesson-jog-controls').hidden = step !== 3;
     switch (step) {
       case 1:
@@ -669,7 +679,7 @@
     if (!autoMix.active) return;
     if (autoMix.mode === 'practice') {
       const score = checkMix();
-      if (autoMix.step === 1 && (!decks.a.audio.src || !decks.b.audio.src)) {
+      if (autoMix.step === 1 && (!decks.a?.audio?.src || !decks.b?.audio?.src)) {
         toast('Carga o inicia una demo en ambos decks para continuar.');
         return;
       }

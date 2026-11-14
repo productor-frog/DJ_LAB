@@ -25,6 +25,7 @@
 ## 🛠️ Deuda Técnica y Mantenimiento (Tareas [C])
 - [x] Conservar el prompt reutilizable del Gauntlet Loop adaptado a DJ Lab, VirtualDJ y las reglas de AGENTS.md en `GAUNTLET_LOOP_PROMPT.md`.
 - [x] Añadir una prueba automatizada de humo en navegador para carga, decks y consola: `smoke.sh` / `tests/smoke.mjs` (Playwright), verifica HTTP 200, decks, controles y consola sin errores propios.
+- [x] Auditoría defensiva de accesos directos: guards y optional chaining en `setCrossfader`, `setPitch`, `syncDeck`, `checkMix` y los pasos de auto-mix; smoke sin errores.
 - [x] Consolidar la documentación: los archivos de la raíz (`HANDOFF.md`, `todo.md`, `user-requests.md`, `roadmap/01-dj-lab.md`) apuntan a `00_cerebro_loop/` como fuente de verdad y el `README.md` describe el estado actual.
 - [ ] Durante el Gauntlet, repetir capturas al mismo viewport y registrar por separado errores propios y advertencias de servicios externos.
 - [x] Retirar la integración de YouTube y sus estilos, mensajes y referencias de inicialización.
