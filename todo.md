@@ -1,9 +1,11 @@
 # Cola de trabajo
 
-- [x] [B] Añadir análisis FFT por bandas y estimación de BPM solo a demos/audio local; nunca analizar ni mezclar el stream de YouTube.
-- [x] [B] Puntuar beatmatch por diferencia de tempo y fase, con estados PERFECT/GOOD/DESINCRONIZADO y lectura explicativa.
-- [x] [B] Añadir MIDI learn universal (notas/CC), controles de fader y jog relativo con persistencia de asignaciones.
-- [x] [B] Importar y exportar metadatos de biblioteca como JSON, validando el formato y sin incluir audio local.
-- [x] [B] Reproducir pistas de la playlist oficial de YouTube directamente en reproductores independientes de Deck A/B, sin subir archivos ni conectar su audio al mixer.
-- [x] [B] Dar instrucciones de pitch y jog con dirección específica para corregir el beatmatch de Deck B respecto a Deck A.
-- [x] [C] Investigar advertencias de consola de YouTube; confirmar cero errores propios y documentar las advertencias del script externo.
+> **Documento histórico.** La cola vigente está en
+> [`00_cerebro_loop/TODO.md`](00_cerebro_loop/TODO.md) y el roadmap en
+> [`00_cerebro_loop/ROADMAP.md`](00_cerebro_loop/ROADMAP.md).
+> No uses este archivo para planificar: menciona la integración de YouTube,
+> que fue retirada del producto.
+
+El trabajo descrito aquí (análisis FFT/BPM, evaluación de beatmatch, MIDI
+learn e importación/exportación de metadatos) está completado o superado por
+las funciones actuales del proyecto.

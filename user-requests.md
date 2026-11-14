@@ -1,6 +1,8 @@
 # Solicitudes de usuario
 
-- [x] Crear ahora una primera cabina educativa de DJ funcional y autocontenida.
-- [x] Después: implementar el detalle analítico avanzado enumerado en `todo.md`, sobre fuentes de audio seleccionadas por el usuario (checkpoint `548f76d`).
-- [x] Reproducir directamente en Deck A y Deck B los temas de la playlist de YouTube, sin tener que subir archivos locales. Cada deck usa el reproductor oficial de YouTube; su audio queda fuera del mixer.
-- [x] Mejorar la práctica de beatmatch con orientación concreta para saber cómo corregir tempo y fase en Deck B.
+> **Documento histórico.** Las solicitudes vigentes y su estado están en
+> [`00_cerebro_loop/USER_REQUESTS.md`](00_cerebro_loop/USER_REQUESTS.md).
+
+Resumen: la solicitud de reproducir temas de YouTube fue revertida; DJ Lab
+solo usa demos, los MP3 incluidos en `tests/` y archivos locales que el
+usuario elige. Nunca se descarga ni se enruta audio de YouTube.

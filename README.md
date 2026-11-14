@@ -44,4 +44,4 @@ Open <http://localhost:3002>.
 - **MEZCLA TU PLAYLIST AQUÍ** includes the four repository MP3s and lets you add more audio files from your device, then load each one into Deck A or Deck B. The queue is temporary for the current browser session; user-selected files are not uploaded and must be added again after a reload.
 - DJ Lab has no YouTube playback or YouTube playlist UI. Use authorized demos, the included repository MP3s, or audio files you provide locally; no audio is downloaded from YouTube.
 
-The current lesson is a playable browser-only baseline. The completed analysis, beatmatch scoring, MIDI mapping, and validated library import/export checklist is in `todo.md`.
+The current lesson is a playable browser-only baseline. The current roadmap, handoff, and user requests live in [`00_cerebro_loop/`](00_cerebro_loop/) (source of truth). The app also includes a progressive learning route, BPM/Camelot/phrase tools, and BPM-based set planning, all covered by `./smoke.sh`.
