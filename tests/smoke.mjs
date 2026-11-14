@@ -40,7 +40,23 @@ try {
   check('Inicio abre con índice principal', await page.locator('#home').count() === 1 && await page.locator('#home-title').isVisible());
   check('Portal ofrece cinco áreas', await page.locator('.portal-card').count() === 5);
   check('Navegación a cabina y biblioteca', await page.locator('.top-nav a[href="#cabina"]').count() === 1 && await page.locator('.top-nav a[href="#biblioteca"]').count() === 1);
-  check('Herramientas BPM activas y Explorar sigue planificado', await page.locator('.portal-card[href="#herramientas"]').count() === 1 && await page.locator('.portal-card-planned').count() === 1 && (await page.locator('#recursos small').textContent()).includes('planificado'));
+  check('Herramientas y Explorar activos', await page.locator('.portal-card[href="#herramientas"]').count() === 1 && await page.locator('.portal-card[href="#recursos"]').count() === 1 && await page.locator('.portal-card-planned').count() === 0);
+  await page.locator('#ruta > summary').click();
+  check('Ruta de aprendizaje muestra cuatro lecciones', await page.locator('#ruta .route-card').count() === 4);
+  check('Ruta inicia sin progreso', await page.locator('#route-score').textContent() === '0 / 4 completadas');
+  await page.locator('.route-card[data-lesson="pulso"] button[data-choice="a"]').click();
+  check('Ruta marca respuesta incorrecta sin avanzar', (await page.locator('.route-card[data-lesson="pulso"] .route-feedback').textContent()).includes('Todavía no') && await page.locator('#route-score').textContent() === '0 / 4 completadas');
+  await page.locator('.route-card[data-lesson="pulso"] button[data-choice="c"]').click();
+  check('Ruta completa una lección correcta', (await page.locator('.route-card[data-lesson="pulso"] .route-feedback').textContent()).includes('Correcto') && await page.locator('#route-score').textContent() === '1 / 4 completadas');
+  await page.locator('.route-card[data-lesson="frase"] button[data-choice="b"]').click();
+  await page.locator('.route-card[data-lesson="tempo"] button[data-choice="a"]').click();
+  await page.locator('.route-card[data-lesson="armonia"] button[data-choice="a"]').click();
+  check('Ruta completa las cuatro lecciones', await page.locator('#route-score').textContent() === '4 / 4 completadas' && await page.locator('#route-progress-bar').evaluate(element => element.style.width) === '100%');
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.locator('#ruta > summary').click();
+  check('Ruta persiste tras recargar', await page.locator('#route-score').textContent() === '4 / 4 completadas');
+  await page.locator('#route-reset').click();
+  check('Ruta se reinicia', await page.locator('#route-score').textContent() === '0 / 4 completadas' && (await page.locator('.route-card[data-lesson="pulso"] .route-feedback').textContent()) === '');
   const bpmSource = page.locator('#bpm-source');
   const bpmTarget = page.locator('#bpm-target');
   const bpmResult = page.locator('#bpm-result');
@@ -62,6 +78,24 @@ try {
   const calculatorShotDir = '/tmp/opencode';
   fs.mkdirSync(calculatorShotDir, { recursive: true });
   await page.locator('#herramientas').screenshot({ path: `${calculatorShotDir}/bpm-calculator.jpg`, type: 'jpeg', quality: 60 });
+  check('Rueda Camelot ofrece 24 tonalidades', await page.locator('#key-source option').count() === 24 && await page.locator('#key-target option').count() === 24);
+  check('Camelot parte de la misma tonalidad', await page.locator('#key-verdict').textContent() === 'Misma tonalidad');
+  await page.locator('#key-target').selectOption('8B');
+  check('Camelot detecta tonalidad relativa', await page.locator('#key-verdict').textContent() === 'Relativa' && (await page.locator('#key-guidance').textContent()).includes('muy segura') && !await page.locator('#key-result').evaluate(element => element.classList.contains('is-out-of-range')));
+  await page.locator('#key-target').selectOption('9A');
+  check('Camelot detecta vecina en la rueda', await page.locator('#key-verdict').textContent() === 'Vecina en la rueda');
+  await page.locator('#key-target').selectOption('3B');
+  check('Camelot advierte un cambio lejano', await page.locator('#key-verdict').textContent() === 'Cambio con riesgo' && await page.locator('#key-result').evaluate(element => element.classList.contains('is-out-of-range')));
+  await page.locator('#phrase-bpm').fill('124');
+  await page.locator('#phrase-bars').fill('8');
+  check('Fraseo calcula 8 compases a 124 BPM', await page.locator('#phrase-duration').textContent() === '15.5 s' && (await page.locator('#phrase-guidance').textContent()).includes('1 compás'));
+  await page.locator('#phrase-bars').fill('0');
+  check('Fraseo rechaza compases inválidos', await page.locator('#phrase-duration').textContent() === 'Compases no válidos');
+  await page.locator('#phrase-bars').fill('8');
+  await page.locator('#phrase-bpm').fill('401');
+  check('Fraseo rechaza BPM fuera de 20–400', await page.locator('#phrase-duration').textContent() === 'BPM no válido');
+  check('Explorar muestra seis rutas curadas', await page.locator('#recursos .resource-card').count() === 6);
+  check('Rutas de Explorar enlazan a secciones internas', await page.locator('#recursos .resource-card').evaluateAll(cards => cards.every(card => (card.getAttribute('href') || '').startsWith('#'))));
   await page.locator('.portal-card[href="#cabina"]').click();
   check('Portal navega a cabina sin quitar la cabina del DOM', page.url().endsWith('#cabina') && await page.locator('#audio-a').count() === 1);
   for (const width of [390, 320]) {
@@ -121,6 +155,47 @@ try {
   check('Añadir desde biblioteca actualiza setlist y resumen', await page.locator('#setlist-tracks .setlist-item').count() === 2 && await page.locator('#setlist-summary').textContent() === '2 pistas · 09:15');
   await page.locator('#setlist-tracks').getByRole('button', { name: `Bajar ${repositoryTracks[0].name} en el set` }).click();
   check('Se puede reordenar una pista del setlist', await page.locator('#setlist-tracks .setlist-item .setlist-track-copy strong').allTextContents().then(names => names[0] === repositoryTracks[1].name && names[1] === repositoryTracks[0].name));
+  await page.locator('#crate-select').selectOption(closingCrateId);
+  await page.evaluate(() => {
+    const saved = JSON.parse(localStorage.getItem('djlab-library-v1') || '[]');
+    const seeds = [
+      { id: 'repo-003', name: '[432Hz] Neon Boulevard', artist: 'Audio local · biblioteca DJ Lab', bpm: 132, duration: 600, source: 'Local', kind: 'local' },
+      { id: 'repo-004', name: 'gris', artist: 'Audio local · biblioteca DJ Lab', bpm: 120, duration: 601, source: 'Local', kind: 'local' }
+    ];
+    const byId = new Map(saved.map(track => [track.id, track]));
+    for (const seed of seeds) byId.set(seed.id, { ...(byId.get(seed.id) || {}), ...seed });
+    localStorage.setItem('djlab-library-v1', JSON.stringify([...byId.values()]));
+  });
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.locator('#crate-select').selectOption(closingCrateId);
+  for (const trackName of [repositoryTracks[3].name, repositoryTracks[2].name]) {
+    await page.locator('#library-body tr').filter({ hasText: trackName }).getByRole('button', { name: `Añadir ${trackName} al setlist` }).click();
+  }
+  check('Planificación muestra rango y salto de tempo', (await page.locator('#setlist-plan-note').textContent()).includes('Rango 120.0–132.0 BPM') && (await page.locator('#setlist-plan-note').textContent()).includes('Salto de tempo'));
+  await page.locator('#setlist-sort-bpm-down').click();
+  check('Orden descendente por BPM', await page.locator('#setlist-tracks .setlist-item .setlist-track-copy strong').allTextContents().then(names => names[0] === repositoryTracks[2].name && names[1] === repositoryTracks[3].name));
+  await page.locator('#setlist-sort-bpm-up').click();
+  check('Orden ascendente por BPM', await page.locator('#setlist-tracks .setlist-item .setlist-track-copy strong').allTextContents().then(names => names[0] === repositoryTracks[3].name && names[1] === repositoryTracks[2].name));
+  await page.locator('#setlist-tracks').getByRole('button', { name: `Quitar ${repositoryTracks[2].name} del set` }).click();
+  await page.locator('#setlist-tracks').getByRole('button', { name: `Quitar ${repositoryTracks[3].name} del set` }).click();
+  await page.evaluate(() => {
+    const saved = JSON.parse(localStorage.getItem('djlab-library-v1') || '[]');
+    const seeds = [
+      { id: 'repo-003', name: '[432Hz] Neon Boulevard', artist: 'Audio local · biblioteca DJ Lab', bpm: 132, duration: 600, source: 'Local', kind: 'local' },
+      { id: 'repo-004', name: 'gris', artist: 'Audio local · biblioteca DJ Lab', bpm: 128, duration: 601, source: 'Local', kind: 'local' }
+    ];
+    const byId = new Map(saved.map(track => [track.id, track]));
+    for (const seed of seeds) byId.set(seed.id, { ...(byId.get(seed.id) || {}), ...seed });
+    localStorage.setItem('djlab-library-v1', JSON.stringify([...byId.values()]));
+  });
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.locator('#crate-select').selectOption(closingCrateId);
+  for (const trackName of [repositoryTracks[3].name, repositoryTracks[2].name]) {
+    await page.locator('#library-body tr').filter({ hasText: trackName }).getByRole('button', { name: `Añadir ${trackName} al setlist` }).click();
+  }
+  check('Planificación avisa cuando las transiciones quedan dentro de ±8 BPM', (await page.locator('#setlist-plan-note').textContent()).includes('Transiciones dentro de ±8 BPM'));
+  await page.locator('#setlist-tracks').getByRole('button', { name: `Quitar ${repositoryTracks[2].name} del set` }).click();
+  await page.locator('#setlist-tracks').getByRole('button', { name: `Quitar ${repositoryTracks[3].name} del set` }).click();
   const savedCrates = await page.evaluate(() => JSON.parse(localStorage.getItem('djlab-crates-v1') || '[]'));
   check('Crates guardan solo IDs y metadatos de pistas', savedCrates.length === 2 && savedCrates.every(crate => Object.keys(crate).sort().join(',') === 'id,name,trackIds' && crate.trackIds.every(id => typeof id === 'string')) && savedCrates.find(crate => crate.name === 'Warm-up')?.trackIds.length === 2);
   await page.reload({ waitUntil: 'networkidle' });
@@ -160,15 +235,28 @@ try {
   await page.locator('#library-source-filter').selectOption('Local');
   check('Filtro dedicado Local conserva cuatro pistas', await page.locator('#library-body tr').count() === 4);
   await page.locator('#library-bpm-filter').selectOption('known');
-  const knownBpmValues = await page.locator('#library-body tr:not(.empty-row) td:nth-child(3)').allTextContents();
+  const knownBpmValues = await page.locator('#library-body tr:not(.empty-row) .library-bpm-input').evaluateAll(inputs => inputs.map(input => input.value));
   check('Filtro BPM conocido muestra solo valores analizados', knownBpmValues.length === Number((await page.locator('#library-count').textContent()).match(/^(\d+)/)?.[1]) && knownBpmValues.every(value => Number(value) > 0));
   await page.locator('#library-bpm-filter').selectOption('unknown');
-  const pendingBpmValues = await page.locator('#library-body tr:not(.empty-row) td:nth-child(3)').allTextContents();
-  check('Filtro BPM pendiente muestra solo pistas sin BPM', pendingBpmValues.length === Number((await page.locator('#library-count').textContent()).match(/^(\d+)/)?.[1]) && pendingBpmValues.every(value => value.trim() === '—'));
+  const pendingBpmValues = await page.locator('#library-body tr:not(.empty-row) .library-bpm-input').evaluateAll(inputs => inputs.map(input => input.value));
+  check('Filtro BPM pendiente muestra solo pistas sin BPM', pendingBpmValues.length === Number((await page.locator('#library-count').textContent()).match(/^(\d+)/)?.[1]) && pendingBpmValues.every(value => value.trim() === ''));
   await page.locator('#library-filter-reset').click();
   await page.locator('#library-tag-filter').selectOption('warm-up');
   await page.locator('#library-filter-reset').click();
   check('Limpiar filtros reinicia búsqueda y selectores', await page.locator('#library-search').inputValue() === '' && await page.locator('#library-source-filter').inputValue() === 'all' && await page.locator('#library-bpm-filter').inputValue() === 'all' && await page.locator('#library-tag-filter').inputValue() === 'all' && await page.locator('#library-body tr').count() === 4);
+
+  const manualBpmInput = page.locator('#library-body .library-bpm-input').nth(0);
+  const manualBpmTrack = await page.locator('#library-body tr').nth(0).locator('.library-track b').textContent();
+  await manualBpmInput.fill('126.5');
+  await manualBpmInput.dispatchEvent('change');
+  check('BPM manual se guarda y se marca como manual', await page.locator('#library-body .library-bpm-input').nth(0).inputValue() === '126.5' && await page.locator('#library-body .library-bpm-input').nth(0).getAttribute('data-source') === 'manual');
+  check('BPM manual persiste con procedencia en localStorage', await page.evaluate(name => JSON.parse(localStorage.getItem('djlab-library-v1') || '[]').some(track => track.name === name && track.bpm === 126.5 && track.bpmSource === 'manual'), manualBpmTrack));
+  await manualBpmInput.fill('19');
+  await manualBpmInput.dispatchEvent('change');
+  check('BPM manual fuera de 20–400 se rechaza', await page.locator('#library-body .library-bpm-input').nth(0).inputValue() === '126.5');
+  await page.reload({ waitUntil: 'networkidle' });
+  check('BPM manual se conserva al recargar', await page.locator('#library-body .library-bpm-input').nth(0).inputValue() === '126.5' && await page.locator('#library-body .library-bpm-input').nth(0).getAttribute('data-source') === 'manual');
+  check('Estimaciones se marcan con ≈ y el manual no', await page.locator('#library-body .bpm-approx').count() === await page.locator('#library-body .library-bpm-input[data-source="estimate"]').count() && await page.locator('#library-body .library-bpm-input[data-source="manual"]').first().evaluate(input => !input.nextElementSibling?.classList?.contains('bpm-approx')));
 
   const preloadedDecks = await page.evaluate(() => ['a', 'b'].map(id => ({
     id,

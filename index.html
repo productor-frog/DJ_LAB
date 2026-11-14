@@ -31,10 +31,10 @@
         </div>
         <nav class="portal-grid" aria-label="Secciones de DJ Lab">
           <a class="portal-card portal-card-primary" href="#cabina"><span class="portal-kicker">01 / PRACTICAR</span><strong>Cabina</strong><small>Dos decks, EQ, BPM, pitch, cue y mezcla en vivo.</small><span class="portal-link">Entrar a la cabina ↗</span></a>
-          <a class="portal-card" href="#aprendizaje"><span class="portal-kicker">02 / APRENDER</span><strong>Beatmatching</strong><small>Inicia la clase guiada y practica tempo, fase y crossfade.</small><span class="portal-link">Ver práctica ↗</span></a>
+          <a class="portal-card" href="#aprendizaje"><span class="portal-kicker">02 / APRENDER</span><strong>Aprender</strong><small>Ruta progresiva y clase guiada de beatmatching.</small><span class="portal-link">Empezar la ruta ↗</span></a>
           <a class="portal-card" href="#biblioteca"><span class="portal-kicker">03 / ORGANIZAR</span><strong>Biblioteca local</strong><small>Explora pistas de ejemplo o añade audio desde este dispositivo.</small><span class="portal-link">Ver colección ↗</span></a>
-          <a class="portal-card" href="#herramientas"><span class="portal-kicker">04 / HERRAMIENTA</span><strong>Calculadora BPM</strong><small>Calcula el ajuste de pitch para igualar dos tempos.</small><span class="portal-link">Probar herramienta ↗</span></a>
-          <a class="portal-card portal-card-planned" href="#recursos"><span class="portal-kicker">05 / EN CAMINO</span><strong>Explorar</strong><small>Rutas de aprendizaje, géneros y recursos seleccionados.</small><span class="portal-link">Ver próximos pasos ↗</span></a>
+          <a class="portal-card" href="#herramientas"><span class="portal-kicker">04 / HERRAMIENTAS</span><strong>Herramientas DJ</strong><small>Calculadora de BPM, compatibilidad armónica y fraseo.</small><span class="portal-link">Probar herramientas ↗</span></a>
+          <a class="portal-card" href="#recursos"><span class="portal-kicker">05 / EXPLORAR</span><strong>Explorar</strong><small>Rutas por nivel y tema para seguir aprendiendo.</small><span class="portal-link">Ver la ruta ↗</span></a>
         </nav>
       </section>
 
@@ -42,6 +42,52 @@
         <div><p class="eyebrow">PRÁCTICA DE HOY <span>•</span> NIVEL 01</p><h1>Tu primera <em>mezcla.</em></h1><p class="intro-copy">Dos decks, un oído atento y el primer paso para tomar el control.</p></div>
         <div class="lesson-progress"><span>LECCIÓN 01 / 04</span><div class="progress-track"><i></i></div><b>25%</b></div>
       </section>
+
+      <details class="route-section" id="ruta">
+        <summary><span>RUTA DE APRENDIZAJE · 4 LECCIONES</span><b id="route-score">0 / 4 completadas</b></summary>
+        <div class="route-body">
+          <div class="route-head"><p>Empieza por los fundamentos y avanza a tu ritmo. Cada lección tiene una pregunta de comprobación; el progreso se guarda solo en este dispositivo.</p><button class="quiet-button" id="route-reset" type="button">REINICIAR RUTA</button></div>
+          <div class="route-progress"><i id="route-progress-bar"></i></div>
+          <div class="route-grid">
+            <article class="route-card" data-lesson="pulso">
+              <span>LECCIÓN 01 · FUNDAMENTOS</span><h3>El pulso y el 4/4</h3>
+              <p>El beat es el pulso constante que marca el tiempo. En la mayoría de la música de club se agrupa en compases de cuatro tiempos, con un acento en el primero.</p>
+              <div class="route-quiz" data-answer="c">
+                <p class="route-question">¿Cuántos tiempos tiene un compás de 4/4?</p>
+                <div class="route-options"><button type="button" data-choice="a">2 tiempos</button><button type="button" data-choice="b">3 tiempos</button><button type="button" data-choice="c">4 tiempos</button></div>
+                <p class="route-feedback" aria-live="polite"></p>
+              </div>
+            </article>
+            <article class="route-card" data-lesson="frase">
+              <span>LECCIÓN 02 · ESTRUCTURA</span><h3>Compás y frase</h3>
+              <p>Las frases agrupan compases y suelen durar 8 o 16 compases. Entrar y salir en el inicio de una frase hace que la transición se sienta natural.</p>
+              <div class="route-quiz" data-answer="b">
+                <p class="route-question">¿Cuántos compases suele tener una frase típica para mezclar?</p>
+                <div class="route-options"><button type="button" data-choice="a">2 compases</button><button type="button" data-choice="b">8 compases</button><button type="button" data-choice="c">32 compases</button></div>
+                <p class="route-feedback" aria-live="polite"></p>
+              </div>
+            </article>
+            <article class="route-card" data-lesson="tempo">
+              <span>LECCIÓN 03 · TEMPO</span><h3>BPM y pitch</h3>
+              <p>El BPM indica la velocidad. Para igualar una pista de 120 BPM con una de 124, subes el pitch de la primera alrededor de +3.3%, no cambias el BPM del archivo.</p>
+              <div class="route-quiz" data-answer="a">
+                <p class="route-question">Pista actual 120 BPM, entrante 124 BPM. ¿Qué haces con la actual?</p>
+                <div class="route-options"><button type="button" data-choice="a">Subir el pitch ~+3.3%</button><button type="button" data-choice="b">Bajar el pitch ~-3.3%</button><button type="button" data-choice="c">No tocar el pitch</button></div>
+                <p class="route-feedback" aria-live="polite"></p>
+              </div>
+            </article>
+            <article class="route-card" data-lesson="armonia">
+              <span>LECCIÓN 04 · ARMONÍA</span><h3>Tonalidad y Camelot</h3>
+              <p>La rueda Camelot numera 12 tonalidades menores (A) y 12 mayores (B). La misma posición o su relativa (mismo número, A↔B) es la transición más segura.</p>
+              <div class="route-quiz" data-answer="a">
+                <p class="route-question">¿Qué par de tonalidades es más seguro para mezclar?</p>
+                <div class="route-options"><button type="button" data-choice="a">8A y 8A</button><button type="button" data-choice="b">8A y 2B</button><button type="button" data-choice="c">8A y 3B</button></div>
+                <p class="route-feedback" aria-live="polite"></p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </details>
 
       <section class="wave-stack" aria-label="Formas de onda de los decks">
         <div class="wave-label wave-a"><span class="channel-dot"></span> DECK A <small id="wave-title-a">CARGA UNA PISTA</small><span class="wave-time" id="time-a">00:00</span></div>
@@ -119,6 +165,7 @@
            <div class="crate-heading"><div><p class="eyebrow">PREPARACIÓN LOCAL</p><h3>Crates y <em>setlist</em></h3><small>Crea colecciones y ordena una secuencia de mezcla. Solo se guardan metadatos; el audio sigue en tu dispositivo.</small></div></div>
            <form id="crate-create-form" class="crate-create-form"><label class="library-control"><span>NUEVO CRATE / PLAYLIST</span><input id="crate-name" type="text" maxlength="60" placeholder="p. ej. Warm-up del viernes" required></label><button class="quiet-button" type="submit">＋ CREAR</button></form>
            <div class="setlist-toolbar"><label class="library-control"><span>COLECCIÓN ACTIVA</span><select id="crate-select" aria-label="Colección activa"><option value="">Crea tu primer crate</option></select></label><span id="setlist-summary" class="setlist-summary">0 pistas · 00:00</span></div>
+           <div class="setlist-plan" id="setlist-plan" hidden><span class="setlist-plan-label">PLANIFICAR SET</span><button class="quiet-button" id="setlist-sort-bpm-up" type="button">BPM ASCENDENTE ↑</button><button class="quiet-button" id="setlist-sort-bpm-down" type="button">BPM DESCENDENTE ↓</button><p id="setlist-plan-note" class="setlist-plan-note" aria-live="polite"></p></div>
            <ol id="setlist-tracks" class="setlist-tracks" aria-live="polite"><li class="playlist-empty">Crea un crate y añade pistas desde la biblioteca para planificar tu set.</li></ol>
          </aside>
          <div class="library-filter-row">
@@ -128,12 +175,12 @@
           <label class="library-control"><span>ETIQUETA</span><select id="library-tag-filter"><option value="all">Todas</option></select></label>
           <button class="library-reset" id="library-filter-reset" type="button">LIMPIAR FILTROS</button>
         </div>
-        <div class="library-table-wrap"><table><thead><tr><th>PISTA</th><th>DURACIÓN</th><th>BPM</th><th>FUENTE</th><th>ETIQUETAS · SEPARADAS POR COMAS</th><th>ACCIÓN</th></tr></thead><tbody id="library-body"><tr class="empty-row"><td colspan="6"><span>♫</span><strong>Tu biblioteca empieza acá</strong><small>Inicia una demo o carga archivos de audio desde tu dispositivo.</small></td></tr></tbody></table></div>
+        <div class="library-table-wrap"><table><thead><tr><th>PISTA</th><th>DURACIÓN</th><th>BPM (EDITABLE)</th><th>FUENTE</th><th>ETIQUETAS · SEPARADAS POR COMAS</th><th>ACCIÓN</th></tr></thead><tbody id="library-body"><tr class="empty-row"><td colspan="6"><span>♫</span><strong>Tu biblioteca empieza acá</strong><small>Inicia una demo o carga archivos de audio desde tu dispositivo.</small></td></tr></tbody></table></div>
         <p class="library-footnote"><span>◉</span> Biblioteca guardada solo en este dispositivo. Los archivos de audio no se copian ni se cargan.</p>
       </section>
 
       <section class="next-up-section" aria-labelledby="next-up-title">
-        <div class="next-up-heading"><div><p class="eyebrow">HERRAMIENTAS · ROADMAP ABIERTO</p><h2 id="next-up-title">Prepara tu <em>mezcla.</em></h2></div><p>Prueba cuánto pitch hace falta para igualar dos BPM. Es una estimación educativa; escucha siempre cómo suena la transición.</p></div>
+        <div class="next-up-heading"><div><p class="eyebrow">HERRAMIENTAS · ROADMAP ABIERTO</p><h2 id="next-up-title">Prepara tu <em>mezcla.</em></h2></div><p>Tres ayudas educativas: ajusta el pitch para igualar BPM, revisa la compatibilidad de tonalidades y cuenta frases. Son estimaciones; escucha siempre cómo suena la transición.</p></div>
         <div class="next-up-grid">
           <article class="next-up-card bpm-tool-card" id="herramientas" aria-labelledby="bpm-tool-title">
             <span>04 · AYUDA DE BPM</span><h3 id="bpm-tool-title">Iguala dos tempos</h3>
@@ -145,8 +192,40 @@
             <div id="bpm-result" class="bpm-result" aria-live="polite" aria-atomic="true"><strong id="bpm-pitch-result">+3.3% pitch</strong><span id="bpm-guidance">Dentro de un rango habitual de ±8%.</span></div>
             <small>Fórmula: (BPM entrante ÷ BPM actual − 1) × 100. Un resultado fuera de ±8% puede requerir otro rango de pitch.</small>
           </article>
-          <article class="next-up-card" id="recursos"><span>05 · EXPLORAR</span><h3>Aprender a tu ritmo</h3><p>Rutas por nivel, fundamentos de géneros y recursos abiertos para seguir practicando.</p><small>Estado: planificado</small></article>
+          <article class="next-up-card bpm-tool-card" id="armonia" aria-labelledby="camelot-tool-title">
+            <span>04 · ARMONÍA</span><h3 id="camelot-tool-title">Rueda Camelot</h3>
+            <p>Compara la tonalidad de la pista actual y la entrante. La rueda usa 12 posiciones menores (A) y 12 mayores (B).</p>
+            <div class="key-inputs">
+              <label for="key-source">PISTA ACTUAL · TONALIDAD<select id="key-source" aria-label="Tonalidad de la pista actual"></select></label>
+              <label for="key-target">PISTA ENTRANTE · TONALIDAD<select id="key-target" aria-label="Tonalidad de la pista entrante"></select></label>
+            </div>
+            <div id="key-result" class="bpm-result" aria-live="polite" aria-atomic="true"><strong id="key-verdict">Misma tonalidad</strong><span id="key-guidance">Ab menor con Ab menor: mezcla directa.</span></div>
+            <small>Misma posición o relativa (mismo número, A↔B) es lo más seguro. Saltar ±1 mantiene la energía; +7 suele subirla. Evita cambios lejanos sin una razón musical.</small>
+          </article>
+          <article class="next-up-card bpm-tool-card" id="fraseo" aria-labelledby="phrase-tool-title">
+            <span>04 · FRASEO</span><h3 id="phrase-tool-title">Cuenta compases</h3>
+            <p>Calcula cuánto dura un compás de 4 tiempos y una frase completa a un BPM dado, para entrar y salir a tiempo.</p>
+            <div class="bpm-inputs">
+              <label for="phrase-bpm">BPM<input id="phrase-bpm" type="number" min="20" max="400" step="0.1" value="124" inputmode="decimal"></label>
+              <label for="phrase-bars">COMPASES POR FRASE<input id="phrase-bars" type="number" min="1" max="64" step="1" value="8" inputmode="numeric"></label>
+            </div>
+            <div id="phrase-result" class="bpm-result" aria-live="polite" aria-atomic="true"><strong id="phrase-duration">15.5 s</strong><span id="phrase-guidance">8 compases de 4 tiempos a 124 BPM.</span></div>
+            <small>Un compás de 4 tiempos a 124 BPM dura 1.9 s. Las frases de 8 o 16 compases son habituales para mezclar.</small>
+          </article>
         </div>
+      </section>
+
+      <section class="resources-section" id="recursos" aria-labelledby="resources-title">
+        <div class="next-up-heading"><div><p class="eyebrow">EXPLORAR · CONTENIDO PROPIO</p><h2 id="resources-title">Tu ruta <em>sigue.</em></h2></div><p>Un índice curado por nivel y tema que enlaza a las prácticas y herramientas de DJ Lab. Las funciones centrales no dependen de recursos externos.</p></div>
+        <div class="resources-grid">
+          <a class="resource-card" href="#fraseo"><span class="resource-level">NIVEL 01 · FUNDAMENTOS</span><h3>Beat, compás y frase</h3><p>Entiende el pulso, el 4/4 y por qué las frases de 8 compases ordenan una mezcla.</p><span class="resource-link">Ir al fraseo ↗</span></a>
+          <a class="resource-card" href="#aprendizaje"><span class="resource-level">NIVEL 01 · OÍDO</span><h3>Igualar tempo y fase</h3><p>Practica con la clase guiada: escucha, ajusta el pitch y corrige la fase con el JOG.</p><span class="resource-link">Abrir la clase ↗</span></a>
+          <a class="resource-card" href="#cabina"><span class="resource-level">NIVEL 02 · TÉCNICA</span><h3>Transiciones y EQ</h3><p>Prepara la mezcla en la cabina: volumen, EQ de tres bandas, crossfader y CUE.</p><span class="resource-link">Entrar a la cabina ↗</span></a>
+          <a class="resource-card" href="#armonia"><span class="resource-level">NIVEL 02 · ARMONÍA</span><h3>Tonalidad y rueda Camelot</h3><p>Compara tonalidades y elige transiciones seguras, relativas o con más energía.</p><span class="resource-link">Abrir la rueda ↗</span></a>
+          <a class="resource-card" href="#biblioteca"><span class="resource-level">NIVEL 03 · PREPARACIÓN</span><h3>Biblioteca y setlists</h3><p>Organiza pistas por BPM, fuente y etiquetas, y planifica el orden de un set local.</p><span class="resource-link">Ver biblioteca ↗</span></a>
+          <a class="resource-card" href="#herramientas"><span class="resource-level">NIVEL 03 · ENERGÍA</span><h3>Tempo, pitch y energía</h3><p>Calcula el pitch para igualar BPM y entiende cómo el tempo cambia la energía del set.</p><span class="resource-link">Usar la calculadora ↗</span></a>
+        </div>
+        <p class="resources-note"><span>◉</span> Contenido educativo propio. Cuando se añadan enlaces externos, serán opcionales y no reemplazarán las prácticas locales.</p>
       </section>
     </main>
     <footer><span>DJ LAB <i>•</i> DE CERO A LEYENDA</span><span>APRENDE · ESCUCHA · MEZCLA</span></footer>

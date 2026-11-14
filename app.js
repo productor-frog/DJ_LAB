@@ -56,10 +56,13 @@
     if (item.id != null && (typeof item.id !== 'string' || item.id.length > 100)) return null;
     if (item.tags != null && (!Array.isArray(item.tags) || item.tags.length > 50 || item.tags.some(tag => typeof tag !== 'string'))) return null;
     const tags = [...new Set((item.tags || []).map(tag => tag.trim().slice(0, 24)).filter(Boolean))].slice(0, 10);
+    const bpmSource = bpm === null ? null : (item.bpmSource === 'manual' ? 'manual' : 'estimate');
+    const rawConfidence = Number(item.bpmConfidence);
+    const bpmConfidence = bpm === null ? null : (bpmSource === 'manual' ? 1 : (Number.isFinite(rawConfidence) ? Math.max(0, Math.min(1, rawConfidence)) : null));
     return {
       id: item.id || `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       name: item.name.trim(), artist: item.artist || (kind === 'demo' ? 'DJ Lab' : 'Audio local'),
-      bpm, duration, source, kind, tags
+      bpm, bpmSource, bpmConfidence, duration, source, kind, tags
     };
   }
 
@@ -108,7 +111,7 @@
 
   function persistLibrary() {
     try {
-      const compact = library.map(({ id, name, artist, bpm, duration, source, kind, tags }) => ({ id, name, artist, bpm, duration, source, kind, tags }));
+      const compact = library.map(({ id, name, artist, bpm, bpmSource, bpmConfidence, duration, source, kind, tags }) => ({ id, name, artist, bpm, bpmSource, bpmConfidence, duration, source, kind, tags }));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(compact));
     } catch { toast('No se pudo guardar la biblioteca en este navegador.'); }
   }
@@ -154,20 +157,23 @@
     if (slider) slider.value = value;
     if (!audioContext) return;
     // Equal-power curve: constant perceived loudness through the center.
-    decks.a.cross.gain.setTargetAtTime(Math.cos(crossPosition * Math.PI / 2), audioContext.currentTime, 0.015);
-    decks.b.cross.gain.setTargetAtTime(Math.sin(crossPosition * Math.PI / 2), audioContext.currentTime, 0.015);
+    decks.a?.cross?.gain?.setTargetAtTime(Math.cos(crossPosition * Math.PI / 2), audioContext.currentTime, 0.015);
+    decks.b?.cross?.gain?.setTargetAtTime(Math.sin(crossPosition * Math.PI / 2), audioContext.currentTime, 0.015);
   }
 
   function setPitch(id, value) {
     const deck = decks[id];
-    if (!deck) return;
+    if (!deck?.audio) return;
     deck.pitch = Number(value);
     const rate = 1 + deck.pitch / 100;
     deck.audio.playbackRate = rate;
     deck.bpm = deck.baseBpm * rate;
-    $(`#pitch-label-${id}`).textContent = `${deck.pitch >= 0 ? '+' : ''}${deck.pitch.toFixed(1)}%`;
-    $(`#pitch-read-${id}`).textContent = `${deck.pitch >= 0 ? '+' : ''}${deck.pitch.toFixed(1)}%`;
-    $(`#bpm-read-${id}`).textContent = deck.bpm.toFixed(1);
+    const pitchLabel = $(`#pitch-label-${id}`);
+    if (pitchLabel) pitchLabel.textContent = `${deck.pitch >= 0 ? '+' : ''}${deck.pitch.toFixed(1)}%`;
+    const pitchRead = $(`#pitch-read-${id}`);
+    if (pitchRead) pitchRead.textContent = `${deck.pitch >= 0 ? '+' : ''}${deck.pitch.toFixed(1)}%`;
+    const bpmRead = $(`#bpm-read-${id}`);
+    if (bpmRead) bpmRead.textContent = deck.bpm.toFixed(1);
     updatePhase();
   }
 
@@ -190,6 +196,7 @@
       }
     };
     deck.trackName = details.name;
+    deck.trackId = details.id || null;
     deck.artist = details.artist || (details.demo ? 'DJ Lab · demo generativa' : 'Archivo local · solo este dispositivo');
     deck.demo = Boolean(details.demo);
     deck.bpmSamples = [];
@@ -199,23 +206,31 @@
     deck.baseBpm = Number(details.bpm) || (id === 'a' ? 120 : 124);
     deck.cuePoint = 0;
     setPitch(id, deck.pitch);
-    $(`#track-${id}`).textContent = deck.trackName;
-    $(`#artist-${id}`).textContent = deck.artist;
-    $(`#wave-title-${id}`).textContent = deck.trackName.toUpperCase();
+    const setText = (selector, text) => { const el = $(selector); if (el) el.textContent = text; };
+    setText(`#track-${id}`, deck.trackName);
+    setText(`#artist-${id}`, deck.artist);
+    setText(`#wave-title-${id}`, deck.trackName.toUpperCase());
     setStatus('AUDIO PREPARADO');
-    $(`#analysis-status-${id}`).textContent = deck.demo ? `DEMO · ${deck.estimatedBpm.toFixed(1)} BPM` : 'LOCAL · BPM POR ESTIMAR';
-    addToLibrary({ ...details, name: deck.trackName, bpm: deck.baseBpm, source: details.demo ? 'Demo' : 'Local' });
+    setText(`#analysis-status-${id}`, deck.demo ? `DEMO · ${Number(deck.estimatedBpm || deck.baseBpm).toFixed(1)} BPM` : 'LOCAL · BPM POR ESTIMAR');
+    addToLibrary({ ...details, name: deck.trackName, bpm: Number(details.bpm) || null, source: details.demo ? 'Demo' : 'Local' });
     updateTransport(id);
   }
 
   function addToLibrary(track) {
     const existing = library.findIndex(item => item.name === track.name && item.source === track.source);
+    const previous = existing >= 0 ? library[existing] : null;
+    const manualPrevious = previous?.bpmSource === 'manual' && Number.isFinite(Number(previous.bpm)) && Number(previous.bpm) > 0;
+    const incomingManual = track.bpmSource === 'manual';
+    const bpm = manualPrevious && !incomingManual ? Number(previous.bpm) : (Number(track.bpm) || null);
+    const bpmSource = bpm === null ? null : (incomingManual || manualPrevious ? 'manual' : 'estimate');
     const entry = normalizeLibraryTrack({
-      id: track.id || `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      id: track.id || previous?.id || `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       name: track.name,
-      tags: library[existing]?.tags || [],
+      tags: previous?.tags || [],
       artist: track.artist || (track.demo ? 'DJ Lab' : 'Audio local'),
-      bpm: Number(track.bpm) || null,
+      bpm,
+      bpmSource,
+      bpmConfidence: bpmSource === 'manual' ? 1 : (track.bpmConfidence ?? (manualPrevious ? 1 : previous?.bpmConfidence ?? null)),
       duration: Number(track.duration) || (track.demo ? 60 / (Number(track.bpm) || 120) * 16 : 0),
       source: track.source || (track.demo ? 'Demo' : 'Local'),
       kind: track.demo ? 'demo' : 'local'
@@ -304,12 +319,14 @@
   function syncDeck(id) {
     ensureAudio();
     const deck = decks[id];
-    if (!deck) return;
-    const target = id === 'a' ? decks.b.bpm : decks.a.bpm;
+    const other = decks[id === 'a' ? 'b' : 'a'];
+    if (!deck?.audio || !other?.audio) return;
+    const target = other.bpm;
     deck.pitch = Math.max(-8, Math.min(8, (target / deck.baseBpm - 1) * 100));
-    $(`[data-pitch="${id}"]`).value = deck.pitch;
+    const pitchInput = $(`[data-pitch="${id}"]`);
+    if (pitchInput) pitchInput.value = deck.pitch;
     setPitch(id, deck.pitch);
-    if (decks.a.audio.src && decks.b.audio.src) {
+    if (decks.a?.audio?.src && decks.b?.audio?.src) {
       const master = decks.a.audio.currentTime || 0;
       deck.audio.currentTime = master;
     }
@@ -353,10 +370,30 @@
     }
   }
 
+  function confidenceFromIntervals(intervals) {
+    if (!Array.isArray(intervals) || intervals.length < 3) return null;
+    const sorted = [...intervals].sort((a, b) => a - b);
+    const at = fraction => sorted[Math.min(sorted.length - 1, Math.max(0, Math.floor((sorted.length - 1) * fraction)))];
+    const median = at(0.5);
+    if (!Number.isFinite(median) || median <= 0) return null;
+    const spread = (at(0.75) - at(0.25)) / median;
+    return Math.max(0, Math.min(1, 1 - spread * 2.5));
+  }
+
   async function analyzeOfflineBpm(id) {
     const deck = decks[id];
+    if (!deck) return;
     const url = deck.objectUrl;
     if (!url || url.startsWith('https://') || !window.AudioContext && !window.webkitAudioContext) return;
+    const manualEntry = library.find(track => track.id === deck.trackId || (track.name === deck.trackName && track.source === 'Local'));
+    if (manualEntry?.bpmSource === 'manual' && Number.isFinite(Number(manualEntry.bpm)) && Number(manualEntry.bpm) > 0) {
+      deck.estimatedBpm = null;
+      deck.baseBpm = Number(manualEntry.bpm);
+      setPitch(id, deck.pitch);
+      const status = $(`#analysis-status-${id}`);
+      if (status) status.textContent = `LOCAL · ${Number(manualEntry.bpm).toFixed(1)} BPM (manual)`;
+      return;
+    }
     try {
       const response = await fetch(url);
       if (!response.ok) return;
@@ -385,21 +422,33 @@
       if (intervals.length < 3) return;
       let bpm = 60 / intervals[Math.floor(intervals.length / 2)];
       if (bpm < 70) bpm *= 2; else if (bpm > 160) bpm /= 2;
+      const confidence = confidenceFromIntervals(intervals);
       if (bpm >= 70 && bpm <= 160) {
         deck.estimatedBpm = bpm;
         deck.baseBpm = bpm;
         setPitch(id, deck.pitch);
-        $(`#analysis-status-${id}`).textContent = `LOCAL · ≈${bpm.toFixed(1)} BPM`;
-        const entry = library.find(track => track.name === deck.trackName && track.source === 'Local');
-        if (entry) { entry.bpm = bpm; persistLibrary(); renderLibrary(); }
+        const confidenceLabel = Number.isFinite(confidence) ? ` · ${Math.round(confidence * 100)}%` : '';
+        const status = $(`#analysis-status-${id}`);
+        if (status) status.textContent = `LOCAL · ≈${bpm.toFixed(1)} BPM${confidenceLabel}`;
+        const entry = library.find(track => track.id === deck.trackId || (track.name === deck.trackName && track.source === 'Local'));
+        if (entry && entry.bpmSource !== 'manual') { entry.bpm = bpm; entry.bpmSource = 'estimate'; entry.bpmConfidence = confidence; persistLibrary(); renderLibrary(); }
+        else if (entry) {
+          deck.baseBpm = Number(entry.bpm);
+          setPitch(id, deck.pitch);
+          const status = $(`#analysis-status-${id}`);
+          if (status) status.textContent = `LOCAL · ${Number(entry.bpm).toFixed(1)} BPM (manual)`;
+        }
       }
-    } catch { $(`#analysis-status-${id}`).textContent = 'LOCAL · BPM NO DISPONIBLE'; }
+    } catch { const status = $(`#analysis-status-${id}`); if (status) status.textContent = 'LOCAL · BPM NO DISPONIBLE'; }
   }
 
   function estimateBpmFromEnergy(id) {
     const deck = decks[id];
+    if (!deck) return;
+    const entry = library.find(track => track.id === deck.trackId || (track.name === deck.trackName && track.source === 'Local'));
+    if (entry?.bpmSource === 'manual') return;
     const samples = deck.bpmSamples;
-    if (samples.length < 36) return;
+    if (!Array.isArray(samples) || samples.length < 36) return;
     const mean = samples.reduce((sum, sample) => sum + sample.energy, 0) / samples.length;
     const variance = samples.reduce((sum, sample) => sum + (sample.energy - mean) ** 2, 0) / samples.length;
     if (variance < 0.00002) return;
@@ -416,7 +465,10 @@
     const normalized = bpm < 70 ? bpm * 2 : bpm > 160 ? bpm / 2 : bpm;
     if (normalized >= 70 && normalized <= 160) {
       deck.estimatedBpm = normalized;
-      $(`#analysis-status-${id}`).textContent = `LOCAL · ≈${normalized.toFixed(1)} BPM`;
+      const confidence = confidenceFromIntervals(intervals);
+      const status = $(`#analysis-status-${id}`);
+      if (status) status.textContent = `LOCAL · ≈${normalized.toFixed(1)} BPM${Number.isFinite(confidence) ? ` · ${Math.round(confidence * 100)}%` : ''}`;
+      deck.estimatedConfidence = confidence;
     }
   }
 
@@ -424,7 +476,9 @@
     const deck = decks[id];
     if (!deck) return;
     const canvas = $(`#wave-${id}`);
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     const width = canvas.clientWidth || 500;
     const height = canvas.clientHeight || 67;
     const ratio = Math.min(window.devicePixelRatio || 1, 2);
@@ -509,7 +563,7 @@
     ensureAudio();
     const a = decks.a, b = decks.b;
     const card = $('#score-card');
-    if (!a.audio.src || !b.audio.src) {
+    if (!a?.audio || !b?.audio || !a.audio.src || !b.audio.src) {
       card.className = 'score-card bad'; $('#score-title').textContent = 'FALTAN PISTAS';
       $('#score-message').textContent = 'Carga o inicia las demos en ambos decks.'; $('#score-value').textContent = '—';
       return { ready: false, bpmDifference: Infinity, phaseDifference: Infinity };
@@ -585,6 +639,11 @@
   async function runAutoMixStep(step) {
     if (!autoMix.active) return;
     const a = decks.a, b = decks.b;
+    if (!a?.audio || !b?.audio) {
+      toast('Carga o inicia las demos en ambos decks antes de la guía.');
+      stopAutoMix();
+      return;
+    }
     if (autoMix.mode === 'practice') $('#lesson-jog-controls').hidden = step !== 3;
     switch (step) {
       case 1:
@@ -669,7 +728,7 @@
     if (!autoMix.active) return;
     if (autoMix.mode === 'practice') {
       const score = checkMix();
-      if (autoMix.step === 1 && (!decks.a.audio.src || !decks.b.audio.src)) {
+      if (autoMix.step === 1 && (!decks.a?.audio?.src || !decks.b?.audio?.src)) {
         toast('Carga o inicia una demo en ambos decks para continuar.');
         return;
       }
@@ -742,12 +801,14 @@
     const list = $('#setlist-tracks');
     if (!crate) {
       $('#setlist-summary').textContent = '0 pistas · 00:00';
+      updateSetPlan([]);
       list.replaceChildren(Object.assign(document.createElement('li'), { className: 'playlist-empty', textContent: 'Crea un crate y añade pistas desde la biblioteca para planificar tu set.' }));
       return;
     }
     const tracks = crate.trackIds.map(id => library.find(track => track.id === id)).filter(Boolean);
     const totalSeconds = tracks.reduce((sum, track) => sum + (Number(track.duration) || 0), 0);
     $('#setlist-summary').textContent = `${tracks.length} ${tracks.length === 1 ? 'pista' : 'pistas'} · ${formatTime(totalSeconds)}`;
+    updateSetPlan(tracks);
     if (!tracks.length) {
       list.replaceChildren(Object.assign(document.createElement('li'), { className: 'playlist-empty', textContent: 'Crate vacío. Usa + en una pista de la biblioteca para añadirla al setlist.' }));
       return;
@@ -770,6 +831,57 @@
       item.append(position, details, controls);
       return item;
     }));
+  }
+
+  function updateSetPlan(tracks) {
+    const plan = $('#setlist-plan');
+    const note = $('#setlist-plan-note');
+    if (!plan || !note) return;
+    plan.hidden = !tracks.length;
+    if (!tracks.length) { note.textContent = ''; return; }
+    const known = tracks.map(track => Number(track.bpm)).filter(bpm => Number.isFinite(bpm) && bpm > 0);
+    if (known.length < 2) {
+      note.textContent = 'Añade BPM a al menos dos pistas para revisar los saltos de tempo del set.';
+      return;
+    }
+    const min = Math.min(...known);
+    const max = Math.max(...known);
+    let maxJump = 0;
+    let jumpLabel = '';
+    for (let index = 1; index < tracks.length; index++) {
+      const previous = Number(tracks[index - 1].bpm);
+      const current = Number(tracks[index].bpm);
+      if (!Number.isFinite(previous) || previous <= 0 || !Number.isFinite(current) || current <= 0) continue;
+      const jump = Math.abs(current - previous);
+      if (jump > maxJump) {
+        maxJump = jump;
+        jumpLabel = `${previous.toFixed(1)} → ${current.toFixed(1)} BPM (${current - previous > 0 ? '+' : ''}${(current - previous).toFixed(1)})`;
+      }
+    }
+    note.textContent = maxJump > 8
+      ? `Rango ${min.toFixed(1)}–${max.toFixed(1)} BPM. Salto de tempo: ${jumpLabel}. Mezcla gradual o reordena.`
+      : `Rango ${min.toFixed(1)}–${max.toFixed(1)} BPM. Transiciones dentro de ±8 BPM.`;
+  }
+
+  function sortSetlistByBpm(direction) {
+    const crate = activeCrate();
+    if (!crate) { toast('Crea o selecciona un crate antes de ordenar.'); return; }
+    if (crate.trackIds.length < 2) { toast('Añade al menos dos pistas para ordenar.'); return; }
+    const bpmOf = id => {
+      const track = library.find(item => item.id === id);
+      const bpm = Number(track?.bpm);
+      return Number.isFinite(bpm) && bpm > 0 ? bpm : null;
+    };
+    crate.trackIds.sort((a, b) => {
+      const aBpm = bpmOf(a);
+      const bBpm = bpmOf(b);
+      if (aBpm === null && bBpm === null) return 0;
+      if (aBpm === null) return 1;
+      if (bBpm === null) return -1;
+      return direction === 'asc' ? aBpm - bBpm : bBpm - aBpm;
+    });
+    persistCrates(); renderCrates();
+    toast(`Setlist ordenado por BPM ${direction === 'asc' ? 'ascendente' : 'descendente'}.`);
   }
 
   function createCrate(name) {
@@ -850,7 +962,53 @@
       const name = document.createElement('td'); name.innerHTML = `<div class="library-track"><i>♪</i><span><b></b><small></small></span></div>`;
       name.querySelector('b').textContent = track.name; name.querySelector('small').textContent = track.artist || track.source;
       const duration = document.createElement('td'); duration.textContent = formatTime(track.duration || 0);
-      const bpm = document.createElement('td'); bpm.textContent = track.bpm ? Number(track.bpm).toFixed(1) : '—';
+      const bpm = document.createElement('td');
+      const bpmInput = document.createElement('input');
+      const hasBpm = Number.isFinite(Number(track.bpm)) && Number(track.bpm) > 0;
+      bpmInput.className = 'library-bpm-input';
+      bpmInput.type = 'number';
+      bpmInput.min = '20';
+      bpmInput.max = '400';
+      bpmInput.step = '0.1';
+      bpmInput.inputMode = 'decimal';
+      bpmInput.value = hasBpm ? Number(track.bpm).toFixed(1) : '';
+      bpmInput.placeholder = '—';
+      bpmInput.dataset.source = track.bpmSource || 'none';
+      const confidenceText = Number.isFinite(Number(track.bpmConfidence)) ? ` · confianza ${Math.round(Number(track.bpmConfidence) * 100)}%` : '';
+      bpmInput.title = track.bpmSource === 'manual' ? 'BPM manual' : track.bpmSource === 'estimate' ? `≈ BPM estimado${confidenceText}` : 'Sin BPM: escribe un valor manual';
+      bpmInput.setAttribute('aria-label', `BPM de ${track.name}`);
+      bpmInput.addEventListener('change', () => {
+        const raw = bpmInput.value.trim();
+        if (!raw) {
+          track.bpm = null;
+          track.bpmSource = null;
+          track.bpmConfidence = null;
+          persistLibrary();
+          renderLibrary();
+          toast(`BPM de ${track.name} borrado.`);
+          return;
+        }
+        const value = Number(raw);
+        if (!Number.isFinite(value) || value < 20 || value > 400) {
+          toast('El BPM debe estar entre 20 y 400.');
+          bpmInput.value = hasBpm ? Number(track.bpm).toFixed(1) : '';
+          return;
+        }
+        track.bpm = value;
+        track.bpmSource = 'manual';
+        track.bpmConfidence = 1;
+        persistLibrary();
+        renderLibrary();
+        toast(`BPM manual de ${track.name}: ${value.toFixed(1)}.`);
+      });
+      bpm.append(bpmInput);
+      if (track.bpmSource === 'estimate') {
+        const approx = document.createElement('span');
+        approx.className = 'bpm-approx';
+        approx.textContent = '≈';
+        approx.title = `Estimación${confidenceText}`;
+        bpm.append(approx);
+      }
       const source = document.createElement('td'); source.textContent = track.source || 'Local';
       const tagsCell = document.createElement('td');
       const tagsInput = document.createElement('input');
@@ -1173,6 +1331,169 @@
   $('#bpm-source').addEventListener('input', updateBpmTool);
   $('#bpm-target').addEventListener('input', updateBpmTool);
   updateBpmTool();
+
+  const CAMELOT_KEYS = [
+    ['1A', 'Ab menor'], ['2A', 'Eb menor'], ['3A', 'Bb menor'], ['4A', 'F menor'],
+    ['5A', 'C menor'], ['6A', 'G menor'], ['7A', 'D menor'], ['8A', 'A menor'],
+    ['9A', 'E menor'], ['10A', 'B menor'], ['11A', 'F# menor'], ['12A', 'C# menor'],
+    ['1B', 'B mayor'], ['2B', 'F# mayor'], ['3B', 'Db mayor'], ['4B', 'Ab mayor'],
+    ['5B', 'Eb mayor'], ['6B', 'Bb mayor'], ['7B', 'F mayor'], ['8B', 'C mayor'],
+    ['9B', 'G mayor'], ['10B', 'D mayor'], ['11B', 'A mayor'], ['12B', 'E mayor']
+  ];
+  const camelotName = code => CAMELOT_KEYS.find(([key]) => key === code)?.[1] || code;
+  const camelotNumber = code => Number(String(code).replace(/[AB]$/, ''));
+  const camelotLetter = code => String(code).slice(-1);
+
+  function populateCamelotSelect(element, selected) {
+    if (!element) return;
+    element.textContent = '';
+    for (const [code, name] of CAMELOT_KEYS) {
+      const option = document.createElement('option');
+      option.value = code;
+      option.textContent = `${code} · ${name}`;
+      option.selected = code === selected;
+      element.append(option);
+    }
+  }
+
+  function describeCamelot(source, target) {
+    if (!source || !target) return { verdict: '—', guidance: 'Elige dos tonalidades.', risk: false };
+    const sourceNumber = camelotNumber(source);
+    const targetNumber = camelotNumber(target);
+    if (!Number.isFinite(sourceNumber) || !Number.isFinite(targetNumber)) {
+      return { verdict: 'Tonalidad no válida', guidance: 'Elige claves de la rueda Camelot.', risk: false };
+    }
+    const difference = Math.abs(sourceNumber - targetNumber);
+    const distance = Math.min(difference, 12 - difference);
+    const sameLetter = camelotLetter(source) === camelotLetter(target);
+    if (source === target) {
+      return { verdict: 'Misma tonalidad', guidance: `${camelotName(source)} con ${camelotName(target)}: mezcla directa, sin choque armónico.`, risk: false };
+    }
+    if (distance === 0 && !sameLetter) {
+      return { verdict: 'Relativa', guidance: `${camelotName(source)} y ${camelotName(target)} comparten notas: transición muy segura.`, risk: false };
+    }
+    if (distance === 1 && sameLetter) {
+      return { verdict: 'Vecina en la rueda', guidance: `Un paso entre ${source} y ${target}: cambio suave, mantiene la energía.`, risk: false };
+    }
+    if (distance === 2 && sameLetter) {
+      return { verdict: 'Dos pasos', guidance: `A dos posiciones, ${source} → ${target} funciona con cuidado; puede notarse el cambio.`, risk: false };
+    }
+    if (sameLetter && (targetNumber - sourceNumber + 12) % 12 === 7) {
+      return { verdict: 'Salto de energía', guidance: `${source} → ${target} sube una quinta: compatible y con más impulso.`, risk: false };
+    }
+    return { verdict: 'Cambio con riesgo', guidance: `${camelotName(source)} y ${camelotName(target)} están lejos en la rueda: prueba en un break o busca otra pista.`, risk: true };
+  }
+
+  function updateCamelotTool() {
+    const sourceSelect = $('#key-source');
+    const targetSelect = $('#key-target');
+    const result = $('#key-result');
+    const verdict = $('#key-verdict');
+    const guidance = $('#key-guidance');
+    if (!sourceSelect || !targetSelect || !result || !verdict || !guidance) return;
+    const description = describeCamelot(sourceSelect.value, targetSelect.value);
+    verdict.textContent = description.verdict;
+    guidance.textContent = description.guidance;
+    result.classList.toggle('is-out-of-range', description.risk);
+  }
+
+  populateCamelotSelect($('#key-source'), '8A');
+  populateCamelotSelect($('#key-target'), '8A');
+  $('#key-source')?.addEventListener('change', updateCamelotTool);
+  $('#key-target')?.addEventListener('change', updateCamelotTool);
+  updateCamelotTool();
+
+  function updatePhraseTool() {
+    const bpmInput = $('#phrase-bpm');
+    const barsInput = $('#phrase-bars');
+    const result = $('#phrase-result');
+    const duration = $('#phrase-duration');
+    const guidance = $('#phrase-guidance');
+    if (!bpmInput || !barsInput || !result || !duration || !guidance) return;
+    const bpm = Number(bpmInput.value);
+    const bars = Number(barsInput.value);
+    if (!Number.isFinite(bpm) || bpm < 20 || bpm > 400) {
+      duration.textContent = 'BPM no válido';
+      guidance.textContent = 'Introduce un BPM entre 20 y 400.';
+      result.classList.add('is-out-of-range');
+      return;
+    }
+    if (!Number.isInteger(bars) || bars < 1 || bars > 64) {
+      duration.textContent = 'Compases no válidos';
+      guidance.textContent = 'Introduce entre 1 y 64 compases por frase.';
+      result.classList.add('is-out-of-range');
+      return;
+    }
+    const barSeconds = (4 * 60) / bpm;
+    const phraseSeconds = barSeconds * bars;
+    duration.textContent = `${phraseSeconds.toFixed(1)} s`;
+    guidance.textContent = `${bars} compases de 4 tiempos a ${bpm} BPM (1 compás = ${barSeconds.toFixed(2)} s).`;
+    result.classList.remove('is-out-of-range');
+  }
+
+  $('#phrase-bpm')?.addEventListener('input', updatePhraseTool);
+  $('#phrase-bars')?.addEventListener('input', updatePhraseTool);
+  updatePhraseTool();
+
+  const ROUTE_KEY = 'djlab-route-v1';
+  const routeCards = $$('.route-card');
+  const routeLessonIds = new Set(routeCards.map(card => card.dataset.lesson).filter(Boolean));
+  let routeProgress = loadRouteProgress();
+
+  function loadRouteProgress() {
+    try {
+      const value = JSON.parse(localStorage.getItem(ROUTE_KEY) || '[]');
+      if (!Array.isArray(value)) return new Set();
+      return new Set(value.filter(id => typeof id === 'string' && routeLessonIds.has(id)));
+    } catch { return new Set(); }
+  }
+
+  function persistRouteProgress() {
+    try { localStorage.setItem(ROUTE_KEY, JSON.stringify([...routeProgress])); }
+    catch { toast('No se pudo guardar tu ruta en este navegador.'); }
+  }
+
+  function updateRouteProgress() {
+    const score = $('#route-score');
+    const bar = $('#route-progress-bar');
+    const total = routeCards.length;
+    const completed = routeCards.filter(card => routeProgress.has(card.dataset.lesson)).length;
+    if (score) score.textContent = `${completed} / ${total} completadas`;
+    if (bar) bar.style.width = `${total ? (completed / total) * 100 : 0}%`;
+    for (const card of routeCards) card.classList.toggle('is-complete', routeProgress.has(card.dataset.lesson));
+  }
+
+  for (const card of routeCards) {
+    const quiz = $('.route-quiz', card);
+    if (!quiz) continue;
+    const answer = quiz.dataset.answer;
+    for (const button of $$('.route-options button', quiz)) {
+      button.addEventListener('click', () => {
+        const feedback = $('.route-feedback', quiz);
+        if (!feedback) return;
+        const correct = button.dataset.choice === answer;
+        feedback.textContent = correct ? 'Correcto. Lección completada.' : 'Todavía no. Vuelve a leer la explicación e inténtalo otra vez.';
+        feedback.className = `route-feedback ${correct ? 'is-correct' : 'is-wrong'}`;
+        if (correct && card.dataset.lesson) {
+          routeProgress.add(card.dataset.lesson);
+          persistRouteProgress();
+          updateRouteProgress();
+        }
+      });
+    }
+  }
+
+  $('#route-reset')?.addEventListener('click', () => {
+    routeProgress = new Set();
+    persistRouteProgress();
+    for (const feedback of $$('.route-feedback')) {
+      feedback.textContent = '';
+      feedback.className = 'route-feedback';
+    }
+    updateRouteProgress();
+    toast('Ruta reiniciada.');
+  });
+  updateRouteProgress();
   $('#crate-create-form').addEventListener('submit', event => {
     event.preventDefault();
     const input = $('#crate-name');
@@ -1182,6 +1503,8 @@
     activeCrateId = event.target.value;
     renderCrates();
   });
+  $('#setlist-sort-bpm-up')?.addEventListener('click', () => sortSetlistByBpm('asc'));
+  $('#setlist-sort-bpm-down')?.addEventListener('click', () => sortSetlistByBpm('desc'));
   $('#library-search').addEventListener('input', event => {
     libraryQuery = event.target.value;
     renderLibrary();
